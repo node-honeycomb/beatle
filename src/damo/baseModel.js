@@ -43,9 +43,9 @@ export default class BaseModel {
 
   setState(nextState, ...args) {
     let callback;
-    if (typeof args[0] === 'function') {
-      callback = args[0];
-      args = undefined;
+    if (typeof args[args.length - 1] === 'function') {
+      callback = args[args.length - 1];
+      args.pop();
     }
     const promises = [];
     const getData = (nextState, payload) => {
