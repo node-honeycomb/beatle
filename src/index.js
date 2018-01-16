@@ -1,0 +1,230 @@
+import React from 'react';
+import Beatle from './base/beatle';
+import {Link} from 'react-router';
+import Ajax from './utils/ajax';
+import Poller from './utils/poller';
+import ReduxSeed from './seed';
+import modelChecker from './base/model';
+import resourceChecker from './base/resource';
+import warning from 'fbjs/lib/warning';
+import messages from './core/messages';
+/**
+ * ### 提供Link标签，对react-router的Link标签做了Hoc
+ *
+ *  * 兼容原生Link的所有特性
+ *  * 带上根路径和全局参数
+ *
+ * ```
+ *  const app = new Beatle({
+ *    query: {
+ *      debug: true
+ *    }
+ *  })
+ *  // 实际上跳转到/example/message?debug=true
+ *  const Message = (props) => {
+ *    return (<Beatle.Link to="/message">跳转</Beatle.Link>)
+ *  }
+ *  // 配置了路由
+ *  app.route('/message', Message);
+ *  // 设置跟路由
+ *  app.run('example');
+ * ```
+ */
+class BeatleLink extends React.PureComponent {
+  render() {
+    const props = this.props;
+    const app = props.appName ? Beatle.getApp(props.appName) : Beatle.defaultApp;
+    const route = typeof props.to === 'string' ? app.route(props.to) : null;
+    const to = route && app.getResolvePath(route) || props.to;
+    const query = Object.assign(props.query || {}, app._setting.query);
+
+    const newProps = {
+      to: {
+        pathname: to,
+        query: query,
+        hash: props.hash,
+        state: props.state
+      }
+    };
+    // #! inherit Link props
+    ['activeStyle', 'activeClassName', 'onlyActiveOnIndex', 'onClick', 'target', 'className', 'style'].forEach((key) => newProps[key] = props[key]);
+
+    return (
+      <Link {...newProps}>{props.children}</Link>
+    );
+  }
+}
+
+/**
+ * ### 扩展Beatle静态属性
+ *
+ * ```
+ * const app = new Beatle();
+ * // 本身Beatle实例的方法
+ * app.route(...)
+ * app.model(...)
+ * // 可直接通过Beatle来使用
+ * Beatle.route(...)
+ * Beatle.model(...)
+ * // 前提Beatle调用值基于主应用的实例来触发方法
+ * // 比如以下就不等同
+ * const subApp = new Beatle({subApp: true});
+ * subApp.route(...) != Beatle.route(...)
+ * ```
+ */
+function mixinApiToStatic(ClassObj, appName) {
+  const apiMethods = [
+    'getStore',
+    'getRoutes',
+    'use',
+    'getResolvePath',
+    'route',
+    'mount',
+    'routesFactory',
+    'model',
+    'connect',
+    'route',
+    'toBindings',
+    'run'
+  ];
+  apiMethods.forEach(method => {
+    ClassObj[method] = function (...args) {
+      if (docorators[method] && this === undefined) {
+        return docorators[method].call(Beatle, args[0]);
+      } else {
+        let app;
+        let fireName;
+        if (appName) {
+          app = Beatle.instances[appName];
+          fireName = appName;
+        } else {
+          app = Beatle.defaultApp;
+          fireName = app ? app._setting.appName : 'anonymous';
+        }
+        if (app) {
+          return app[method].apply(app, args);
+        } else {
+          const callback = Beatle.toLazy((theApp) => {
+            return theApp[method].apply(theApp, args);
+          });
+          Beatle.fireCallbacks[fireName] = Beatle.fireCallbacks[fireName] || [];
+          Beatle.fireCallbacks[fireName].push(callback);
+          return callback;
+        }
+      }
+    };
+  });
+  return ClassObj;
+}
+
+Object.assign(Beatle, {
+  /**
+   * ### Beatle静态方法
+   *
+   * | 方法 | 参数类型 | 描述 |
+   * |: ------ |: ------ |: ------ |
+   * | getApp(appName) `BeatleInstance`  | appName `String` | 传入实例名称，获取Beatle实例 |
+   * | createModel(Model[, Resource]) | Model `Object`, Resource `Object`| 通过映射Resource来创建Model |
+   *
+   * > 其他静态方法，均为Beatle的开放Api，Api通过静态方法来调用，最终交给主应用来执行返回。
+   * > 比如`Beatle.model(...)` 等同于 `Beatle.getApp(mainAppName).model(...)`
+   */
+  getApp(appName) {
+    if (Beatle.instances[appName]) {
+      return Beatle.instances[appName];
+    } else {
+      return mixinApiToStatic({}, appName);
+    }
+  },
+  createModel(Model, Resource) {
+    if (this !== Beatle) {
+      // for decorator model
+      return docorators.createModel.call(Beatle, Model);
+    } else {
+      // #! 校验失败应该返回错误信息 see: https://github.com/facebook/prop-types/issues/142
+      if (Model) {
+        modelChecker(Model, 'model');
+        if (Resource) {
+          resourceChecker(Resource, 'resource');
+          return ReduxSeed.createModel(Model, Resource);
+        } else {
+          return Model;
+        }
+      } else {
+        warning(false, messages.invalidValue, 'arguments', 'Model', Model, 'Beatle.createModel', 'ModelShape');
+      }
+    }
+  },
+  toLazy(callback) {
+    const fn = (theApp) => {
+      return fn._result = callback(theApp);
+    };
+    fn._lazy = true;
+    return fn;
+  },
+  fromLazy(fn, theApp) {
+    if (fn._lazy) {
+      if (fn._result) {
+        return fn._result;
+      } else {
+        return fn(theApp);
+      }
+    } else {
+      return fn;
+    }
+  },
+  /**
+   * ### mixin静态对象
+   *
+   * | 对象 | 描述 |
+   * |: ------ |: ------ |
+   * | Link | 路由跳转组件 |
+   * | Ajax | 接口调用模块 |
+   * | Poller | 轮询调用模块 |
+   * | ReduxSeed | 专门处理Redux的模块 |
+   *
+   * > 其中`Ajax`, `Poller`, `ReduxSeed` 在你要支持多实例时将特别需要。
+   */
+  Ajax: Ajax,
+  Poller: Poller,
+  ReduxSeed: ReduxSeed,
+  Link: BeatleLink
+});
+mixinApiToStatic(Beatle);
+
+function getDecorator(fn) {
+  return (option = {}) => BaseComponent => {
+    let app = typeof option.app === 'string' ? Beatle.instances[option.app] : option.app || Beatle.defaultApp;
+    if (!app) {
+      warning(false, messages.appoint, 'connect', 'Beatle');
+    }
+
+    return fn(app || Beatle, option, BaseComponent);
+  };
+}
+
+const docorators = {
+  // decorator for connect
+  connect: getDecorator((app, option, BaseComponent) => {
+    return app.connect(option.bindings, BaseComponent, option.flattern);
+  }),
+  // docorator for model
+  model: getDecorator((app, option, Model) => {
+    return app.model(Model, option.Resource);
+  }),
+  // decorator for createModel
+  createModel: Resource => Model => {
+    return Beatle.createModel(Model, Resource);
+  },
+  // docorator for route
+  route: getDecorator((app, option, BaseComponent) => {
+    if (option.routeOptions) {
+      BaseComponent.routeOptions = Object.assign(BaseComponent.routeOptions || {}, option.routeOptions);
+    }
+    return app.route(option.path, BaseComponent);
+  })
+};
+
+module.exports = Beatle;
+
+export default Beatle;
