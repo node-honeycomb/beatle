@@ -84,15 +84,15 @@ export default function ({
             error: getActionType(modelName, actionKey, 'error')
           };
 
-          dispatch({type: actionName.start, data: undefined, store: initialState, arguments: args});
+          dispatch({type: actionName.start, data: undefined, store: initialState, arguments: args, exec: exec});
 
           return new Promise((resolve, reject) => {
             const errorCallback = function (error) {
-              dispatch({type: actionName.error, data: undefined, store: initialState, arguments: args, message: error.message});
+              dispatch({type: actionName.error, data: undefined, store: initialState, arguments: args, message: error.message, exec: exec});
               reject(error);
             };
             const successCallback = function (data) {
-              dispatch({type: actionName.success, data: data, store: initialState, arguments: args});
+              dispatch({type: actionName.success, data: data, store: initialState, arguments: args, exec: exec});
               resolve(data);
             };
 
@@ -102,7 +102,7 @@ export default function ({
             } else if (isPlainObject(exec)) {
               // #! 保留之前的逻辑，这里是否继续优化
               const option = Object.assign({
-                data: exec.data ? Object.assign(exec.data, args[0]) : args[0]
+                data: exec.data ? Object.assign({}, exec.data, args[0]) : args[0]
               }, args[1]);
               for (let key in option) {
                 if (option[key] === undefined) {
