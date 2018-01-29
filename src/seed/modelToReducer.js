@@ -1,10 +1,10 @@
 import immutable from 'seamless-immutable';
 import getActionType from './getActionType';
-
+import cloneDeep from 'lodash/cloneDeep';
 function noop() {}
 
 // # 数据模型转Reducer
-export default function modelToReducer(model, initialState) {
+export default function modelToReducer(model, initialState, isImmutable) {
   // #! 获取配置项
   const actions = model.actions;
   const actionKeys = Object.keys(actions);
@@ -157,8 +157,10 @@ export default function modelToReducer(model, initialState) {
   return function (store = initialState, payload) {
     const processor = processorMap[payload.type] || noop;
     let prevStore = null;
-    if (store && store.asMutable) {
+    if (immutable.isImmutable(store)) {
       prevStore = store.asMutable({deep: true});
+    } else if (store) {
+      prevStore = cloneDeep(store);
     } else {
       prevStore = store;
     }
@@ -180,6 +182,6 @@ export default function modelToReducer(model, initialState) {
       nextStore = prevStore;
     }
 
-    return immutable(nextStore);
+    return isImmutable ? immutable(nextStore) : nextStore;
   };
 }
