@@ -358,9 +358,7 @@ export default class Ajax {
     }, (err) => {
       callback && callback(err, null, xhr);
     });
-    if (!callback) {
-      return xhr;
-    }
+    return xhr;
   }
 
   poller(pollerOptions) {

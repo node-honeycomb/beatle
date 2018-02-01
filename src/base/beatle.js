@@ -667,6 +667,18 @@ export default class Beatle {
       }
     };
   }
+
+  getActions(name) {
+    const actions = this.seed.getActions(name);
+    const store = this.getStore();
+    const newActoins = {};
+    for (let key in actions) {
+      newActoins[key] = (...args) => {
+        return actions[key](...args)(store.dispatch);
+      };
+    }
+    return newActoins;
+  }
   /**
    * ### 应用启动
    *

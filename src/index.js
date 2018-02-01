@@ -99,7 +99,7 @@ function mixinApiToStatic(ClassObj, appName) {
           fireName = appName;
         } else {
           app = Beatle.defaultApp;
-          fireName = app ? app._setting.appName : 'anonymous';
+          fireName = app ? app._setting.appName : '__anonymous__';
         }
         if (app) {
           return app[method].apply(app, args);
