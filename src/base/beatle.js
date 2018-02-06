@@ -51,8 +51,8 @@ const beatleShape = {
   env: propTypes.object,
   autoLoadModel: propTypes.bool,
   autoLoadRoute: propTypes.bool,
-  models: propTypes.oneOfType([propTypes.object, propTypes.func]),
-  routes: propTypes.oneOfType([propTypes.object, propTypes.func]),
+  models: propTypes.oneOfType([propTypes.object, propTypes.func, propTypes.array]),
+  routes: propTypes.oneOfType([propTypes.object, propTypes.func, propTypes.array]),
   routeType: propTypes.string
 };
 const SEP = '/';
@@ -154,14 +154,15 @@ export default class Beatle {
     this.seed = new ReduxSeed({name: this._setting.appName, initialState: options.store, middlewares: middlewares, Models: Models, ajax: this.ajax});
 
     // #! 自动加载路由
-    if (options.routes) {
-      this._setRoutes(options.routes, true);
-    } else if (options.autoLoadRoute) {
+    if (options.autoLoadRoute) {
       try {
         this.routesFactory(autoLoadRequire.loadRoutes());
       } catch (x) {
         window.console.error(x);
       }
+    }
+    if (options.routes) {
+      this._setRoutes(options.routes, false);
     }
   }
 
@@ -183,7 +184,10 @@ export default class Beatle {
       }
       // 需要遍历所有路由配置，包括父级、子级，都映射到routesMap，方便后续查找
       routes.forEach((item) => {
-        this._setting.routesMap[this.getResolvePath(route)] = route;
+        if (isAssign === false) {
+          this._setting.routes.push(item);
+        }
+        this._setting.routesMap[this.getResolvePath(item)] = item;
         if (item.childRoutes) {
           this._setRoutes(item.childRoutes);
         }
@@ -456,7 +460,10 @@ export default class Beatle {
             strict: option.strict,
             callback: routeCallback
           });
-          childRoute && routes.push(childRoute);
+          if (childRoute) {
+            routes.push(childRoute);
+            this._setting.routes.push(childRoute);
+          }
         } else {
           name = keys.pop();
           children = routes;
@@ -499,11 +506,14 @@ export default class Beatle {
               strict: option.strict,
               callback: routeCallback
             });
-            childRoute && routes.push(childRoute);
+            if (childRoute) {
+              routes.push(childRoute);
+              this._setting.routes.push(childRoute);
+            }
           }
         }
       });
-    return this._setting.routes = routes;
+    return routes;
   }
 
   model(Model, Resource) {
