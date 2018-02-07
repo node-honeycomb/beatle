@@ -303,6 +303,17 @@ export default class Beatle {
   }
 
   getResolvePath(routeConfig) {
+    if (typeof routeConfig === 'string') {
+      if (routeConfig[0] === SEP) {
+        return routeConfig;
+      } else {
+        if (this._setting.basePath) {
+          return this._setting.basePath + SEP + routeConfig;
+        } else {
+          return routeConfig;
+        }
+      }
+    }
     let resolvePath;
     if (routeConfig.resolvePath) {
       resolvePath = routeConfig.resolvePath;
@@ -719,6 +730,7 @@ export default class Beatle {
     rootDom = rootDom || this._setting.rootDom;
     basePath = basePath || this._setting.basePath;
 
+    this._setting.basePath = basePath;
     ReactDOM.render(React.createElement(Provider, {
       store: store
     }, React.createElement(Router, {
