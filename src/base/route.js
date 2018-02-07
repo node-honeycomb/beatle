@@ -17,7 +17,7 @@ export default function route(path, RouteComponent, option = {}) {
       routeConfig.indexRoute = {
         component: routeConfig.indexRoute
       };
-    } else {
+    } else if (typeof routeConfig.indexRoute === 'function') {
       routeConfig.indexRoute = {
         getComponent: routeConfig.indexRoute
       };
