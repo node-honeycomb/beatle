@@ -386,6 +386,7 @@ mixinMethods.forEach((method) => {
    */
   Ajax.prototype[method] = function (url, data, callback, dataType) {
     const ajaxOptions = {
+      method: method,
       url: url,
       data: data
     };
