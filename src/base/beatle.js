@@ -162,7 +162,7 @@ export default class Beatle {
       }
     }
     if (options.routes) {
-      this._setRoutes(options.routes, false);
+      this.setRoutes(options.routes, false);
     }
   }
 
@@ -171,32 +171,10 @@ export default class Beatle {
    *
    * | 方法 | 参数类型 | 描述 |
    * |: ------ |: ------ |: ------ |
-   * | _setRoutes(routes, isAssign) `void`  | routes `Array︱Object︱Context`, isAssign `Boolean` | 批量路由注册 |
    * | _getMiddleWareFactory() `void` | N/A | 构建一个redux中间件，把所有Beatle的中间组装进去 |
    * | _withBasename(basePath) `Object` | basePath `String` | 生成带有根路径的路由处理对象 |
    * | _parseRoute(routeConfig) `Object` | routeConfig `Object` | 处理路由，app转路由也在这处理，并且添加到routesMap |
    */
-  _setRoutes(routes, isAssign) {
-    if (Array.isArray(routes)) {
-      // 路由配置为数组时，实际上是react-router的路由配置
-      if (isAssign) {
-        this._setting.routes = routes;
-      }
-      // 需要遍历所有路由配置，包括父级、子级，都映射到routesMap，方便后续查找
-      routes.forEach((item) => {
-        if (isAssign === false) {
-          this._setting.routes.push(item);
-        }
-        this._setting.routesMap[this.getResolvePath(item)] = item;
-        if (item.childRoutes) {
-          this._setRoutes(item.childRoutes);
-        }
-      });
-    } else {
-      this.routesFactory(routes);
-    }
-  }
-
   _getMiddleWareFactory() {
     return (store) => (next) => (action) => {
       const callback = (nextAction) => {
@@ -264,6 +242,7 @@ export default class Beatle {
    * | getResolvePath(routeConfig) `String` | routeConfig `Object` | 根据路由配置获取真实的路径 |
    * | route(path[, component]) | path `String︱Array︱Object︱Context`, component `ReactComponent` | 只有一个参数，此时为字符串则查找路由配置，否则是批量注册路由配置；2个参数未显示注册单个路由配置 |
    * | routesFactory(routes, option) | routes `Array︱Object︱Context`, option `Object` | 批量注册路由，可以传入option做更多处理 |
+   * | setRoutes(routes, isAssign) `void`  | routes `Array︱Object︱Context`, isAssign `Boolean` | 批量路由注册 |
    * | model(Model) | Model `Object` | 注册数据模型 |
    * | connect(bindings, component[, flattern]) | bindings `String︱Object︱Array`, component `ReactComponent`, flattern `Boolean` | 设置视图, binding指定注入数据模型或者根据数据模型注入数据和方法 |
    * | run([rootDom, basePath]) | rootDom `Object`, basePath `String` | 启动应用 |
@@ -275,6 +254,27 @@ export default class Beatle {
 
   getRoutes() {
     return this._setting.routes;
+  }
+
+  setRoutes(routes, isAssign) {
+    if (Array.isArray(routes)) {
+      // 路由配置为数组时，实际上是react-router的路由配置
+      if (isAssign) {
+        this._setting.routes = routes;
+      }
+      // 需要遍历所有路由配置，包括父级、子级，都映射到routesMap，方便后续查找
+      routes.forEach((item) => {
+        if (isAssign === false) {
+          this._setting.routes.push(item);
+        }
+        this._setting.routesMap[this.getResolvePath(item)] = item;
+        if (item.childRoutes) {
+          this.setRoutes(item.childRoutes);
+        }
+      });
+    } else {
+      this.routesFactory(routes);
+    }
   }
 
   /**
@@ -403,7 +403,7 @@ export default class Beatle {
         .push(childRoute);
     } else {
       // #! 设置多个路由
-      this._setRoutes(path, true);
+      this.setRoutes(path, true);
     }
   }
 
