@@ -345,9 +345,13 @@ export default class Beatle {
     routes.push(childRoute);
     if (childRoute.aliasRoutes) {
       childRoute.aliasRoutes.forEach(r => {
+        const path = r.path;
         r = Object.assign({}, childRoute, r);
         delete r.resolvePath;
-        r.path = this._parsePath(r.path, r.name);
+        if (!path) {
+          r.path = this._parsePath(r.path, r.name);
+        }
+
         const resolvePath = this.getResolvePath(r);
         if (!this._setting.routesMap[resolvePath]) {
           this._setting.routesMap[resolvePath] = r;
