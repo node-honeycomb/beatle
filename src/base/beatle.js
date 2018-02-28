@@ -354,7 +354,10 @@ export default class Beatle {
           routes.push(r);
         }
       });
+      delete this._setting.routesMap[childRoute.resolvePath];
+      delete childRoute.resolvePath;
       childRoute.path = this._parsePath(childRoute.path, childRoute.name);
+      this._setting.routesMap[this.getResolvePath(childRoute)] = childRoute;
     }
   }
   /**
