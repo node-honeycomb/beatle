@@ -473,7 +473,14 @@ export default class Beatle {
      */
     Object
       .keys(routesMap)
-      .sort((a, b) => a.split(/[\\/]/).length - b.split(/[\\/]/).length)
+      .sort((a, b) => {
+        const compare = a.split(/[\\/]/).length - b.split(/[\\/]/).length;
+        if (compare === 0) {
+          return [1, -1][(a > b) - 0];
+        } else {
+          return compare;
+        }
+      })
       .forEach((relativePath) => {
         const keys = relativePath
           .slice(2, -10)
@@ -495,7 +502,8 @@ export default class Beatle {
           childRoute = route(null, Comp, {
             name: keys[0] || SEP,
             strict: option.strict,
-            callback: routeCallback
+            callback: routeCallback,
+            fpath: relativePath
           });
           if (childRoute) {
             this._pushRoute(routes, childRoute);
@@ -528,7 +536,8 @@ export default class Beatle {
               name: name,
               navKey: navKey,
               strict: option.strict,
-              callback: routeCallback
+              callback: routeCallback,
+              fpath: relativePath
             });
             if (childRoute) {
               childRoute.parent = parentRoute;
@@ -539,7 +548,8 @@ export default class Beatle {
               name: name,
               navKey: navKey,
               strict: option.strict,
-              callback: routeCallback
+              callback: routeCallback,
+              fpath: relativePath
             });
             if (childRoute) {
               this._pushRoute(routes, childRoute);
