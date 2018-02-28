@@ -203,7 +203,14 @@ export default class Beatle {
       return this._setting.history;
     }
   }
-
+  _parsePath(path, name) {
+    if (path) {
+      path = path.replace('/:alias', '/' + name);
+    } else {
+      path = name;
+    }
+    return path;
+  }
   _parseRoute(routeConfig, strict) {
     // #! 如果设置路由是一个子App
     if (routeConfig.component instanceof Beatle) {
@@ -211,12 +218,7 @@ export default class Beatle {
       const self = this;
       const newComponent = createReactClass({
         render() {
-          let path;
-          if (routeConfig.path) {
-            path = routeConfig.path.replace('/:alias', '/' + routeConfig.name);
-          } else {
-            path = routeConfig.name;
-          }
+          const path = self._parsePath(routeConfig.path, routeConfig.name);
           return React.createElement(Provider, {
             store: component.getStore()
           }, React.createElement(Router, {
@@ -324,13 +326,7 @@ export default class Beatle {
     if (routeConfig.resolvePath) {
       resolvePath = routeConfig.resolvePath;
     } else {
-      let path;
-      if (routeConfig.path) {
-        path = routeConfig.path.replace('/:alias', '/' + routeConfig.name);
-      } else {
-        path = routeConfig.name;
-      }
-      const paths = [path];
+      const paths = [this._parsePath(routeConfig.path, routeConfig.name)];
       let item = routeConfig;
       item = item.parent;
       while (item) {
@@ -349,7 +345,12 @@ export default class Beatle {
     routes.push(childRoute);
     if (childRoute.aliasRoutes) {
       childRoute.aliasRoutes.forEach(r => {
-        routes.push(Object.assign(childRoute, r));
+        r = Object.assign(childRoute, r);
+        const resolvePath = this.getResolvePath(r);
+        if (!this._setting.routesMap[resolvePath]) {
+          this._setting.routesMap[resolvePath] = r;
+          routes.push(r);
+        }
       });
     }
   }
