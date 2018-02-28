@@ -211,10 +211,16 @@ export default class Beatle {
       const self = this;
       const newComponent = createReactClass({
         render() {
+          let path;
+          if (routeConfig.path) {
+            path = routeConfig.path.replace('/:alias', '/' + routeConfig.name);
+          } else {
+            path = routeConfig.name;
+          }
           return React.createElement(Provider, {
             store: component.getStore()
           }, React.createElement(Router, {
-            history: self._withBasename(routeConfig.path),
+            history: self._withBasename(path),
             routes: component._setting.routes
           }));
         }
@@ -318,7 +324,13 @@ export default class Beatle {
     if (routeConfig.resolvePath) {
       resolvePath = routeConfig.resolvePath;
     } else {
-      const paths = [routeConfig.path || routeConfig.name];
+      let path;
+      if (routeConfig.path) {
+        path = routeConfig.path.replace('/:alias', '/' + routeConfig.name);
+      } else {
+        path = routeConfig.name;
+      }
+      const paths = [path];
       let item = routeConfig;
       item = item.parent;
       while (item) {
@@ -401,9 +413,7 @@ export default class Beatle {
       RouteComponent = Beatle.fromLazy(RouteComponent, this);
       // #! 设置路由
       const childRoute = route(path, RouteComponent, {
-        callback: this
-          ._parseRoute
-          .bind(this)
+        callback: this._parseRoute.bind(this)
       });
       if (childRoute) {
         this._pushRoute(this._setting.routes, childRoute);
@@ -423,9 +433,7 @@ export default class Beatle {
         callback: option
       };
     }
-    const routeCallback = option.callback || this
-      ._parseRoute
-      .bind(this);
+    const routeCallback = option.callback || this._parseRoute.bind(this);
     const leave = option.leave || 1;
     if (option.strict === undefined) {
       option.strict = true;
@@ -513,9 +521,7 @@ export default class Beatle {
             });
             if (childRoute) {
               childRoute.parent = parentRoute;
-              parentRoute
-                .childRoutes
-                .push(childRoute);
+              this._pushRoute(parentRoute.childRoutes, childRoute);
             }
           } else {
             childRoute = route(null, Comp, {
