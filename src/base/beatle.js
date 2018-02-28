@@ -205,7 +205,7 @@ export default class Beatle {
   }
   _parsePath(path, name) {
     if (path) {
-      path = path.replace('/:alias', '/' + name);
+      path = path.replace('/:name', '/' + name);
     } else {
       path = name;
     }
@@ -218,7 +218,7 @@ export default class Beatle {
       const self = this;
       const newComponent = createReactClass({
         render() {
-          const path = self._parsePath(routeConfig.path, routeConfig.name);
+          const path = routeConfig.path || routeConfig.name;
           return React.createElement(Provider, {
             store: component.getStore()
           }, React.createElement(Router, {
@@ -326,7 +326,7 @@ export default class Beatle {
     if (routeConfig.resolvePath) {
       resolvePath = routeConfig.resolvePath;
     } else {
-      const paths = [this._parsePath(routeConfig.path, routeConfig.name)];
+      const paths = [routeConfig.path || routeConfig.name];
       let item = routeConfig;
       item = item.parent;
       while (item) {
@@ -345,13 +345,16 @@ export default class Beatle {
     routes.push(childRoute);
     if (childRoute.aliasRoutes) {
       childRoute.aliasRoutes.forEach(r => {
-        r = Object.assign(childRoute, r);
+        r = Object.assign({}, childRoute, r);
+        delete r.resolvePath;
+        r.path = this._parsePath(r.path, r.name);
         const resolvePath = this.getResolvePath(r);
         if (!this._setting.routesMap[resolvePath]) {
           this._setting.routesMap[resolvePath] = r;
           routes.push(r);
         }
       });
+      childRoute.path = this._parsePath(childRoute.path, childRoute.name);
     }
   }
   /**
