@@ -476,7 +476,7 @@ export default class Beatle {
       .sort((a, b) => {
         const compare = a.split(/[\\/]/).length - b.split(/[\\/]/).length;
         if (compare === 0) {
-          return [1, -1][(a > b) - 0];
+          return [-1, 1][(a > b) - 0];
         } else {
           return compare;
         }

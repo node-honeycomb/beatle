@@ -5,7 +5,8 @@ export default function route(path, RouteComponent, option = {}) {
     path: path || (option.navKey ? option.navKey + '/' + option.name : option.name),
     name: option.name,
     navKey: option.navKey,
-    component: RouteComponent
+    component: RouteComponent,
+    fpath: option.fpath
   }, RouteComponent.routeOptions);
 
   if (option.callback && option.callback(routeConfig, option.strict) === false) {
