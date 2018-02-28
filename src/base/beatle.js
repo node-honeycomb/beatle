@@ -265,7 +265,7 @@ export default class Beatle {
       // 需要遍历所有路由配置，包括父级、子级，都映射到routesMap，方便后续查找
       routes.forEach((item) => {
         if (isAssign === false) {
-          this._setting.routes.push(item);
+          this._pushRoute(this._setting.routes, item);
         }
         this._setting.routesMap[this.getResolvePath(item)] = item;
         if (item.childRoutes) {
@@ -333,6 +333,14 @@ export default class Beatle {
     return resolvePath;
   }
 
+  _pushRoute(routes, childRoute) {
+    routes.push(childRoute);
+    if (childRoute.aliasRoutes) {
+      childRoute.aliasRoutes.forEach(r => {
+        routes.push(Object.assign(childRoute, r));
+      });
+    }
+  }
   /**
    * ### 设置路由
    *
@@ -397,10 +405,9 @@ export default class Beatle {
           ._parseRoute
           .bind(this)
       });
-      childRoute && this
-        ._setting
-        .routes
-        .push(childRoute);
+      if (childRoute) {
+        this._pushRoute(this._setting.routes, childRoute);
+      }
     } else {
       // #! 设置多个路由
       this.setRoutes(path, true);
@@ -472,8 +479,8 @@ export default class Beatle {
             callback: routeCallback
           });
           if (childRoute) {
-            routes.push(childRoute);
-            this._setting.routes.push(childRoute);
+            this._pushRoute(routes, childRoute);
+            this._pushRoute(this._setting.routes, childRoute);
           }
         } else {
           name = keys.pop();
@@ -518,8 +525,8 @@ export default class Beatle {
               callback: routeCallback
             });
             if (childRoute) {
-              routes.push(childRoute);
-              this._setting.routes.push(childRoute);
+              this._pushRoute(routes, childRoute);
+              this._pushRoute(this._setting.routes, childRoute);
             }
           }
         }
