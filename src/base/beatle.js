@@ -175,7 +175,7 @@ export default class Beatle {
    * | _withBasename(basePath) `Object` | basePath `String` | 生成带有根路径的路由处理对象 |
    * | _parseRoute(routeConfig) `Object` | routeConfig `Object` | 处理路由，app转路由也在这处理，并且添加到routesMap |
    */
-  
+
   _getMiddleWareFactory() {
     return (store) => (next) => (action) => {
       const callback = (nextAction) => {

@@ -54,6 +54,7 @@ app
   //   url: '/users/baqian'
   // }
 })
+/* eslint-disable no-unused-vars */
 class UserModel {
   static displayName = 'user';
   static store = {
@@ -69,7 +70,7 @@ class UserModel {
         tst: 2,
         profile2: 1
       });
-      console.log(select('profile1'));
+      window.console.log(select('profile1'));
       return await select('profile');
     },
     // getUser => enumerator
@@ -78,7 +79,7 @@ class UserModel {
     // enumerator.next(data);
     // enumerator.next(...)
     * getUser(name, {put, call}) {
-      console.log(name);
+      window.console.log(name);
       const a = call(() => app.ajax.get('/users/baqian'));
       const b = {
         '@@redux-saga/IO': true,
@@ -94,13 +95,14 @@ class UserModel {
           }
         }
       };
-      // console.log(a);
-      // console.log(b);
+      // window.console.log(a);
+      // window.console.log(b);
       const data = yield a;
+      /* eslint-disable no-unused-vars */
       const test = yield b;
-      // console.log(data);
-      // console.log(test);
-      
+      // window.console.log(data);
+      // window.console.log(test);
+
       yield put({
         profile: data,
         name: name
@@ -140,7 +142,7 @@ class Root extends Component {
 
   componentWillMount() {
     this.props.user.getUserAsync().then(res => {
-      window.console.log(res);
+      window.window.console.log(res);
     });
     // this.props.user.getUser('test');
     // this.props.dispatch({

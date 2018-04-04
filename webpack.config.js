@@ -87,9 +87,9 @@ var webpackOpts = {
     new webpack.optimize.CommonsChunkPlugin({names: ['public', 'vendor'], minChunks: 2}),
 
     new AutoModulePlugin({
-      basePath: path.resolve(process.cwd()), //前端目录的base路径
-      modelsPath: path.resolve(process.cwd(),'./example/src/models'), // models目录的路径
-      scenesPath: path.resolve(process.cwd(),'./example/src/scenes'), // scenes目录的路径
+      basePath: path.resolve(process.cwd()), // 前端目录的base路径
+      modelsPath: path.resolve(process.cwd(), './example/src/models'), // models目录的路径
+      scenesPath: path.resolve(process.cwd(), './example/src/scenes'), // scenes目录的路径
       extensions: ['jsx', 'js']  // 识别文件类型
     }),
   ],
