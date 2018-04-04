@@ -13,6 +13,7 @@ const app = new Beatle({
   // routes: require.context('./scenes', true, /index\.jsx$/)
 });
 
+console.log(app.getRoutes());
 app.route('/list', TodoList);
 
 app.run();

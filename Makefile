@@ -15,8 +15,8 @@ eslint:
 build: eslint
 	@echo 'eslint building...'
 	@if [ ! -f "./node_modules/.bin/honeypack" ]; then \
-    npm install @ali/honeypack --registry=http://registry.npm.alibaba-inc.com; \
-    npm install @ali/naza-docco-plugin --registry=http://registry.npm.alibaba-inc.com; \
+    npm install honeypack --registry=http://registry.npm.alibaba-inc.com; \
+    npm install damo-cli-docco-plugin --registry=http://registry.npm.alibaba-inc.com; \
   fi
 	@./node_modules/.bin/honeypack build -c webpack.build.js
 	@echo 'eslint build done!'

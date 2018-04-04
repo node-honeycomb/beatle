@@ -270,7 +270,7 @@ seed实例是[ReduxSeed](#class-reduxseed)实例，`app.getStore()`实际上是�
 
 ```javascript
   import React from 'react';
-  import Beatle from '@ali/beatle';
+  import Beatle from 'beatle';
 
   const app = new Beatle();
 
@@ -551,7 +551,7 @@ Beatle.createModel(userModel, userResource);
 + 通过new ReduxSeed产生seed实例
 
 ```javascript
-  import {ReduxSeed} from '@ali/beatle';
+  import {ReduxSeed} from 'beatle';
 
   const seed = new ReduxSeed({...});
 ```
@@ -597,7 +597,7 @@ Beatle.createModel(userModel, userResource);
 + Ajax的全局配置分为2种：全局（所有实例有效） 和 实例级，支持的值如上
 
 ```javascript
-  import {Ajax} from '@ali/Beatle';
+  import {Ajax} from 'Beatle';
   Ajax.headers = {
     csrfToken: '...'
   }
@@ -680,7 +680,7 @@ Ajax静态方法，其内部会初始化一个ajax实例，并调用ajax.request
 | catchError `Function` | 轮询中每个动作调用失败时都会进入到错误回调 | N/A |
 
 ```javascript
-  import Beatle, {Poller} from '@ali/beatle';
+  import Beatle, {Poller} from 'beatle';
   const poller = new Pooler({
     action: () => {
       // 每个5秒会轮询调用改函数

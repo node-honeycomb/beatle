@@ -4,12 +4,12 @@ const path = require('path');
 
 module.exports = {
   entry: {
-    app: ["./test/main.test.js"]
+    app: ['./test/main.test.js']
   },
   output: {
-    path: path.resolve(__dirname, "test"),
-    publicPath: "/test/",
-    filename: "main.test.js"
+    path: path.resolve(__dirname, 'test'),
+    publicPath: '/test/',
+    filename: 'main.test.js'
   },
   resolve: {
     extensions: ['.js', '.jsx', '.json']
@@ -22,11 +22,11 @@ module.exports = {
         exclude: /node_modules/
       },
       {
-        test: /\.css$/, 
+        test: /\.css$/,
         loader: 'style-loader!css-loader'
       },
       {
-        test: /\.less$/, 
+        test: /\.less$/,
         loader: 'style-loader!css-loader!less-loader'
       },
       {

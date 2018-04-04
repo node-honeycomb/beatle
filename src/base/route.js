@@ -5,7 +5,8 @@ export default function route(path, RouteComponent, option = {}) {
     path: path || (option.navKey ? option.navKey + '/' + option.name : option.name),
     name: option.name,
     navKey: option.navKey,
-    component: RouteComponent
+    component: RouteComponent,
+    fpath: option.fpath
   }, RouteComponent.routeOptions);
 
   if (option.callback && option.callback(routeConfig, option.strict) === false) {
@@ -17,7 +18,7 @@ export default function route(path, RouteComponent, option = {}) {
       routeConfig.indexRoute = {
         component: routeConfig.indexRoute
       };
-    } else {
+    } else if (typeof routeConfig.indexRoute === 'function') {
       routeConfig.indexRoute = {
         getComponent: routeConfig.indexRoute
       };

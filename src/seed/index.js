@@ -75,9 +75,10 @@ export default class ReduxSeed {
     this._instanceName = options.name || ReduxSeed.defaultApp;
     this._ajax = options.ajax;
     this._saga = new Saga();
+    this._isImmutable = !options.initialState || immutable.isImmutable(options.initialState);
     this._init(this._instanceName);
-
-    this._initStore(options.initialState, options.middlewares.concat(this._saga.getMiddleware(this.getModel.bind(this))), options.Models);
+    const initialState = this._isImmutable && options.initialState ? options.initialState.asMutable({deep: true}) : options.initialState;
+    this._initStore(initialState, options.middlewares.concat(this._saga.getMiddleware(this.getModel.bind(this))), options.Models);
   }
 
   _init() {
@@ -113,7 +114,7 @@ export default class ReduxSeed {
       if (!Model.displayName) {
         Model.displayName = name;
       }
-      const initialState = immutable(Model.store);
+      const initialState = this._isImmutable ? immutable(Model.store) : Model.store;
       redux.models[name] = Model;
       redux.actions[name] = getActions({
         modelName: name,
@@ -121,7 +122,7 @@ export default class ReduxSeed {
         resource: Resource,
         initialState: initialState
       }, this);
-      redux.rootReducer[name] = modelToReducer(Model, initialState);
+      redux.rootReducer[name] = modelToReducer(Model, initialState, this._isImmutable);
       return Model.store;
     }
   }
@@ -172,7 +173,7 @@ export default class ReduxSeed {
       const allState = redux
         .store
         .getState();
-      allState[name] = immutable(initialState);
+      allState[name] = this._isImmutable ? immutable(initialState) : initialState;
     }
   }
 

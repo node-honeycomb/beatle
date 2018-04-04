@@ -1,9 +1,7 @@
 var path = require('path');
-var _ = require('lodash');
 var webpack = require('webpack');
-var ExtractTextPlugin = require('extract-text-webpack-plugin');
 var HtmlWebpackPlugin = require('html-webpack-plugin');
-var AutoModulePlugin = require('@ali/auto-router-plugin');
+var AutoModulePlugin = require('hc-honeypack-auto-module-plugin');
 const vendors = [
   'antd',
   'seamless-immutable',
@@ -96,7 +94,7 @@ var webpackOpts = {
     }),
   ],
   devServer: {
-    stats: "errors-only",
+    stats: 'errors-only',
     open: true
   },
   unPlugins: []

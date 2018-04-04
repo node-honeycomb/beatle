@@ -1,9 +1,5 @@
 var path = require('path');
-var _ = require('lodash');
-var webpack = require('webpack');
-var ExtractTextPlugin = require('extract-text-webpack-plugin');
-var HtmlWebpackPlugin = require('html-webpack-plugin');
-var DoccoPlugin =  require('@ali/naza-docco-plugin');
+var DoccoPlugin =  require('damo-cli-docco-plugin');
 
 const vendors = [
   'antd',

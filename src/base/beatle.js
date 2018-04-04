@@ -51,8 +51,8 @@ const beatleShape = {
   env: propTypes.object,
   autoLoadModel: propTypes.bool,
   autoLoadRoute: propTypes.bool,
-  models: propTypes.oneOfType([propTypes.object, propTypes.func]),
-  routes: propTypes.oneOfType([propTypes.object, propTypes.func]),
+  models: propTypes.oneOfType([propTypes.object, propTypes.func, propTypes.array]),
+  routes: propTypes.oneOfType([propTypes.object, propTypes.func, propTypes.array]),
   routeType: propTypes.string
 };
 const SEP = '/';
@@ -154,14 +154,15 @@ export default class Beatle {
     this.seed = new ReduxSeed({name: this._setting.appName, initialState: options.store, middlewares: middlewares, Models: Models, ajax: this.ajax});
 
     // #! 自动加载路由
-    if (options.routes) {
-      this._setRoutes(options.routes, true);
-    } else if (options.autoLoadRoute) {
+    if (options.autoLoadRoute) {
       try {
         this.routesFactory(autoLoadRequire.loadRoutes());
       } catch (x) {
         window.console.error(x);
       }
+    }
+    if (options.routes) {
+      this.setRoutes(options.routes, false);
     }
   }
 
@@ -170,29 +171,11 @@ export default class Beatle {
    *
    * | 方法 | 参数类型 | 描述 |
    * |: ------ |: ------ |: ------ |
-   * | _setRoutes(routes, isAssign) `void`  | routes `Array︱Object︱Context`, isAssign `Boolean` | 批量路由注册 |
    * | _getMiddleWareFactory() `void` | N/A | 构建一个redux中间件，把所有Beatle的中间组装进去 |
    * | _withBasename(basePath) `Object` | basePath `String` | 生成带有根路径的路由处理对象 |
    * | _parseRoute(routeConfig) `Object` | routeConfig `Object` | 处理路由，app转路由也在这处理，并且添加到routesMap |
    */
-  _setRoutes(routes, isAssign) {
-    if (Array.isArray(routes)) {
-      // 路由配置为数组时，实际上是react-router的路由配置
-      if (isAssign) {
-        this._setting.routes = routes;
-      }
-      // 需要遍历所有路由配置，包括父级、子级，都映射到routesMap，方便后续查找
-      routes.forEach((item) => {
-        this._setting.routesMap[this.getResolvePath(route)] = route;
-        if (item.childRoutes) {
-          this._setRoutes(item.childRoutes);
-        }
-      });
-    } else {
-      this.routesFactory(routes);
-    }
-  }
-
+  
   _getMiddleWareFactory() {
     return (store) => (next) => (action) => {
       const callback = (nextAction) => {
@@ -203,7 +186,7 @@ export default class Beatle {
         if (middleware) {
           middleware(nextAction, callback, store.dispatch);
         } else {
-          return next(nextAction);
+          next(nextAction);
         }
       };
       callback.pos = 0;
@@ -221,7 +204,14 @@ export default class Beatle {
       return this._setting.history;
     }
   }
-
+  _parsePath(path, name) {
+    if (path) {
+      path = path.replace('/:name', '/' + name);
+    } else {
+      path = name;
+    }
+    return path;
+  }
   _parseRoute(routeConfig, strict) {
     // #! 如果设置路由是一个子App
     if (routeConfig.component instanceof Beatle) {
@@ -229,10 +219,11 @@ export default class Beatle {
       const self = this;
       const newComponent = createReactClass({
         render() {
+          const path = routeConfig.path || routeConfig.name;
           return React.createElement(Provider, {
             store: component.getStore()
           }, React.createElement(Router, {
-            history: self._withBasename(routeConfig.path),
+            history: self._withBasename(path),
             routes: component._setting.routes
           }));
         }
@@ -260,16 +251,39 @@ export default class Beatle {
    * | getResolvePath(routeConfig) `String` | routeConfig `Object` | 根据路由配置获取真实的路径 |
    * | route(path[, component]) | path `String︱Array︱Object︱Context`, component `ReactComponent` | 只有一个参数，此时为字符串则查找路由配置，否则是批量注册路由配置；2个参数未显示注册单个路由配置 |
    * | routesFactory(routes, option) | routes `Array︱Object︱Context`, option `Object` | 批量注册路由，可以传入option做更多处理 |
+   * | setRoutes(routes, isAssign) `void`  | routes `Array︱Object︱Context`, isAssign `Boolean` | 批量路由注册 |
    * | model(Model) | Model `Object` | 注册数据模型 |
    * | connect(bindings, component[, flattern]) | bindings `String︱Object︱Array`, component `ReactComponent`, flattern `Boolean` | 设置视图, binding指定注入数据模型或者根据数据模型注入数据和方法 |
    * | run([rootDom, basePath]) | rootDom `Object`, basePath `String` | 启动应用 |
    */
   getStore() {
-    return this.seed.getStore();
+    return ReduxSeed.getRedux(this._setting.appName)
+      .store;
   }
 
   getRoutes() {
     return this._setting.routes;
+  }
+
+  setRoutes(routes, isAssign) {
+    if (Array.isArray(routes)) {
+      // 路由配置为数组时，实际上是react-router的路由配置
+      if (isAssign) {
+        this._setting.routes = routes;
+      }
+      // 需要遍历所有路由配置，包括父级、子级，都映射到routesMap，方便后续查找
+      routes.forEach((item) => {
+        if (isAssign === false) {
+          this._pushRoute(this._setting.routes, item);
+        }
+        this._setting.routesMap[this.getResolvePath(item)] = item;
+        if (item.childRoutes) {
+          this.setRoutes(item.childRoutes);
+        }
+      });
+    } else {
+      this.routesFactory(routes);
+    }
   }
 
   /**
@@ -298,6 +312,17 @@ export default class Beatle {
   }
 
   getResolvePath(routeConfig) {
+    if (typeof routeConfig === 'string') {
+      if (routeConfig[0] === SEP) {
+        return routeConfig;
+      } else {
+        if (this._setting.basePath) {
+          return this._setting.basePath + SEP + routeConfig;
+        } else {
+          return routeConfig;
+        }
+      }
+    }
     let resolvePath;
     if (routeConfig.resolvePath) {
       resolvePath = routeConfig.resolvePath;
@@ -317,6 +342,29 @@ export default class Beatle {
     return resolvePath;
   }
 
+  _pushRoute(routes, childRoute) {
+    routes.push(childRoute);
+    if (childRoute.aliasRoutes) {
+      childRoute.aliasRoutes.forEach(r => {
+        const path = r.path;
+        r = Object.assign({}, childRoute, r);
+        delete r.resolvePath;
+        if (!path) {
+          r.path = this._parsePath(r.path, r.name);
+        }
+
+        const resolvePath = this.getResolvePath(r);
+        if (!this._setting.routesMap[resolvePath]) {
+          this._setting.routesMap[resolvePath] = r;
+          routes.push(r);
+        }
+      });
+      delete this._setting.routesMap[childRoute.resolvePath];
+      delete childRoute.resolvePath;
+      childRoute.path = this._parsePath(childRoute.path, childRoute.name);
+      this._setting.routesMap[this.getResolvePath(childRoute)] = childRoute;
+    }
+  }
   /**
    * ### 设置路由
    *
@@ -373,21 +421,18 @@ export default class Beatle {
     if (arguments.length === 1 && typeof path === 'string') {
       return this._setting.routesMap[path];
     }
-    RouteComponent = Beatle.fromLazy(RouteComponent, this);
     if (RouteComponent) {
+      RouteComponent = Beatle.fromLazy(RouteComponent, this);
       // #! 设置路由
       const childRoute = route(path, RouteComponent, {
-        callback: this
-          ._parseRoute
-          .bind(this)
+        callback: this._parseRoute.bind(this)
       });
-      childRoute && this
-        ._setting
-        .routes
-        .push(childRoute);
+      if (childRoute) {
+        this._pushRoute(this._setting.routes, childRoute);
+      }
     } else {
       // #! 设置多个路由
-      this._setRoutes(path, true);
+      this.setRoutes(path, true);
     }
   }
 
@@ -400,9 +445,7 @@ export default class Beatle {
         callback: option
       };
     }
-    const routeCallback = option.callback || this
-      ._parseRoute
-      .bind(this);
+    const routeCallback = option.callback || this._parseRoute.bind(this);
     const leave = option.leave || 1;
     if (option.strict === undefined) {
       option.strict = true;
@@ -431,7 +474,14 @@ export default class Beatle {
      */
     Object
       .keys(routesMap)
-      .sort((a, b) => a.split(/[\\/]/).length - b.split(/[\\/]/).length)
+      .sort((a, b) => {
+        const compare = a.split(/[\\/]/).length - b.split(/[\\/]/).length;
+        if (compare === 0) {
+          return [-1, 1][(a > b) - 0];
+        } else {
+          return compare;
+        }
+      })
       .forEach((relativePath) => {
         const keys = relativePath
           .slice(2, -10)
@@ -453,9 +503,13 @@ export default class Beatle {
           childRoute = route(null, Comp, {
             name: keys[0] || SEP,
             strict: option.strict,
-            callback: routeCallback
+            callback: routeCallback,
+            fpath: relativePath
           });
-          childRoute && routes.push(childRoute);
+          if (childRoute) {
+            this._pushRoute(routes, childRoute);
+            this._pushRoute(this._setting.routes, childRoute);
+          }
         } else {
           name = keys.pop();
           children = routes;
@@ -483,26 +537,29 @@ export default class Beatle {
               name: name,
               navKey: navKey,
               strict: option.strict,
-              callback: routeCallback
+              callback: routeCallback,
+              fpath: relativePath
             });
             if (childRoute) {
               childRoute.parent = parentRoute;
-              parentRoute
-                .childRoutes
-                .push(childRoute);
+              this._pushRoute(parentRoute.childRoutes, childRoute);
             }
           } else {
             childRoute = route(null, Comp, {
               name: name,
               navKey: navKey,
               strict: option.strict,
-              callback: routeCallback
+              callback: routeCallback,
+              fpath: relativePath
             });
-            childRoute && routes.push(childRoute);
+            if (childRoute) {
+              this._pushRoute(routes, childRoute);
+              this._pushRoute(this._setting.routes, childRoute);
+            }
           }
         }
       });
-    return this._setting.routes = routes;
+    return routes;
   }
 
   model(Model, Resource) {
@@ -510,7 +567,6 @@ export default class Beatle {
     if (arguments.length === 1 && typeof Model === 'string') {
       return this.seed.getModel(Model);
     }
-
     if (Model) {
       Model = Beatle.fromLazy(Model, this);
       // #! 不一定存在了，之前ES5和ES6混用时出现过。
@@ -675,6 +731,18 @@ export default class Beatle {
       }
     };
   }
+
+  getActions(name) {
+    const actions = this.seed.getActions(name);
+    const store = this.getStore();
+    const newActoins = {};
+    for (let key in actions) {
+      newActoins[key] = (...args) => {
+        return actions[key](...args)(store.dispatch);
+      };
+    }
+    return newActoins;
+  }
   /**
    * ### 应用启动
    *
@@ -705,6 +773,7 @@ export default class Beatle {
     rootDom = rootDom || this._setting.rootDom;
     basePath = basePath || this._setting.basePath;
 
+    this._setting.basePath = basePath;
     ReactDOM.render(React.createElement(Provider, {
       store: store
     }, React.createElement(Router, {
