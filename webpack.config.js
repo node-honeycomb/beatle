@@ -1,36 +1,34 @@
 var path = require('path');
-var _ = require('lodash');
 var webpack = require('webpack');
-var ExtractTextPlugin = require('extract-text-webpack-plugin');
 var HtmlWebpackPlugin = require('html-webpack-plugin');
-var AutoModulePlugin = require('@ali/auto-router-plugin');
+var AutoModulePlugin = require('hc-honeypack-auto-module-plugin');
 const vendors = [
-  "antd",
-  "seamless-immutable",
-  "core-js",
-  "react",
-  "prop-types",
-  "react-dom",
-  "react-redux",
-  "react-router",
-  "redux-router",
-  "react-router-redux",
-  "redux-logger",
-  "redux-thunk",
-  "react-intl",
-  "react-mixin",
-  "cuid",
-  "redux",
-  "redux-promise-middleware",
-  "react-redux-loading-bar",
-  "hoist-non-react-statics",
-  "recompose",
-  "reselect",
-  "async-validator",
-  "isomorphic-fetch",
-  "events",
-  "lodash",
-  "moment"
+  'antd',
+  'seamless-immutable',
+  'core-js',
+  'react',
+  'prop-types',
+  'react-dom',
+  'react-redux',
+  'react-router',
+  'redux-router',
+  'react-router-redux',
+  'redux-logger',
+  'redux-thunk',
+  'react-intl',
+  'react-mixin',
+  'cuid',
+  'redux',
+  'redux-promise-middleware',
+  'react-redux-loading-bar',
+  'hoist-non-react-statics',
+  'recompose',
+  'reselect',
+  'async-validator',
+  'isomorphic-fetch',
+  'events',
+  'lodash',
+  'moment'
 ];
 
 var webpackOpts = {
@@ -59,14 +57,14 @@ var webpackOpts = {
     new webpack.optimize.CommonsChunkPlugin({names: ['public', 'vendor'], minChunks: 2}),
 
     new AutoModulePlugin({
-      basePath: path.resolve(process.cwd()), //前端目录的base路径
-      modelsPath: path.resolve(process.cwd(),'./example/src/models'), // models目录的路径
-      scenesPath: path.resolve(process.cwd(),'./example/src/scenes'), // scenes目录的路径
+      basePath: path.resolve(process.cwd()), // 前端目录的base路径
+      modelsPath: path.resolve(process.cwd(), './example/src/models'), // models目录的路径
+      scenesPath: path.resolve(process.cwd(), './example/src/scenes'), // scenes目录的路径
       extensions: ['jsx', 'js']  // 识别文件类型
     }),
   ],
   devServer: {
-    stats: "errors-only",
+    stats: 'errors-only',
     open: true
   },
   unPlugins: []

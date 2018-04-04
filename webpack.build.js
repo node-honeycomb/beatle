@@ -1,39 +1,35 @@
 var path = require('path');
-var _ = require('lodash');
-var webpack = require('webpack');
-var ExtractTextPlugin = require('extract-text-webpack-plugin');
-var HtmlWebpackPlugin = require('html-webpack-plugin');
-var DoccoPlugin =  require('@ali/naza-docco-plugin');
+var DoccoPlugin =  require('damo-cli-docco-plugin');
 
 const vendors = [
-  "antd",
-  "seamless-immutable",
-  "core-js",
-  "react",
-  "prop-types",
-  "react-dom",
-  "react-redux",
-  "react-router",
-  "redux-router",
-  "react-router-redux",
-  "redux-logger",
-  "redux-thunk",
-  "react-intl",
-  "react-mixin",
-  "cuid",
-  "redux",
-  "redux-promise-middleware",
-  "react-redux-loading-bar",
-  "hoist-non-react-statics",
-  "recompose",
-  "reselect",
-  "async-validator",
-  "isomorphic-fetch",
-  "events",
-  "lodash",
-  "moment",
-  "../../../../auto_models",
-  "../../../../auto_routes"
+  'antd',
+  'seamless-immutable',
+  'core-js',
+  'react',
+  'prop-types',
+  'react-dom',
+  'react-redux',
+  'react-router',
+  'redux-router',
+  'react-router-redux',
+  'redux-logger',
+  'redux-thunk',
+  'react-intl',
+  'react-mixin',
+  'cuid',
+  'redux',
+  'redux-promise-middleware',
+  'react-redux-loading-bar',
+  'hoist-non-react-statics',
+  'recompose',
+  'reselect',
+  'async-validator',
+  'isomorphic-fetch',
+  'events',
+  'lodash',
+  'moment',
+  '../../../../auto_models',
+  '../../../../auto_routes'
 ];
 
 var webpackOpts = {
