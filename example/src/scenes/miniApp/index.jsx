@@ -70,7 +70,7 @@ class UserModel {
         tst: 2,
         profile2: 1
       });
-      window.console.log(select('profile1'));
+      window.console.log(select('profile'));
       return await select('profile');
     },
     // getUser => enumerator

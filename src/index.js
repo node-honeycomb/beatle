@@ -1,4 +1,5 @@
 import React from 'react';
+import enhancleBeatle from './damo/index';
 import Beatle from './base/beatle';
 import {Link} from 'react-router';
 import Ajax from './utils/ajax';
@@ -90,25 +91,25 @@ function mixinApiToStatic(ClassObj, appName) {
   apiMethods.forEach(method => {
     ClassObj[method] = function (...args) {
       if (docorators[method] && this === undefined) {
-        return docorators[method].call(Beatle, args[0]);
+        return docorators[method].call(BeatlePro, args[0]);
       } else {
         let app;
         let fireName;
         if (appName) {
-          app = Beatle.instances[appName];
+          app = BeatlePro.instances[appName];
           fireName = appName;
         } else {
-          app = Beatle.defaultApp;
+          app = BeatlePro.defaultApp;
           fireName = app ? app._setting.appName : '__anonymous__';
         }
         if (app) {
           return app[method].apply(app, args);
         } else {
-          const callback = Beatle.toLazy((theApp) => {
+          const callback = BeatlePro.toLazy((theApp) => {
             return theApp[method].apply(theApp, args);
           });
-          Beatle.fireCallbacks[fireName] = Beatle.fireCallbacks[fireName] || [];
-          Beatle.fireCallbacks[fireName].push(callback);
+          BeatlePro.fireCallbacks[fireName] = BeatlePro.fireCallbacks[fireName] || [];
+          BeatlePro.fireCallbacks[fireName].push(callback);
           return callback;
         }
       }
@@ -137,7 +138,7 @@ Object.assign(Beatle, {
     }
   },
   createModel(Model, Resource) {
-    if (this !== Beatle) {
+    if (this !== BeatlePro) {
       // for decorator model
       return docorators.createModel.call(Beatle, Model);
     } else {
@@ -190,6 +191,7 @@ Object.assign(Beatle, {
   ReduxSeed: ReduxSeed,
   Link: BeatleLink
 });
+
 mixinApiToStatic(Beatle);
 
 function getDecorator(fn) {
@@ -214,7 +216,7 @@ const docorators = {
   }),
   // decorator for createModel
   createModel: Resource => Model => {
-    return Beatle.createModel(Model, Resource);
+    return BeatlePro.createModel(Model, Resource);
   },
   // docorator for route
   route: getDecorator((app, option, BaseComponent) => {
@@ -222,9 +224,18 @@ const docorators = {
       BaseComponent.routeOptions = Object.assign(BaseComponent.routeOptions || {}, option.routeOptions);
     }
     return app.route(option.path, BaseComponent);
+  }),
+  // docorator for observable
+  observable: getDecorator((app, option, BaseComponent) => {
+    return app.connect(option.data, BaseComponent);
+  }),
+  // decorator for view
+  view: getDecorator((app, option, BaseComponent) => {
+    return app.view(option.selector, BaseComponent, option.selector ? option.providers : option.flattern);
   })
 };
 
-module.exports = Beatle;
+const BeatlePro = enhancleBeatle(Beatle);
+module.exports = BeatlePro;
 
-export default Beatle;
+export default BeatlePro;

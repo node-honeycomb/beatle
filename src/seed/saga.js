@@ -61,7 +61,7 @@ export default class Saga {
       return this._effects;
     } else if (typeof model === 'string') {
       return this._effects[model];
-    } else {
+    } else if (model.effects) {
       const self = this;
       model._emitter = this._createEffects(model);
       const effect = function* () {

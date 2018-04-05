@@ -25,4 +25,6 @@ export default {
   dispatchType: 'Warning: `%s` action should be a plain Object with type. `%s`',
   // location, value, name, component
   mergeWarning: 'Warning: `%s` state but `%s` is not declarede in `%s`. `%s`',
+  // location, value, name, component
+  selectError: 'Error: `%s` state key `%s` is invaliable in `%s`. `%s`'
 };

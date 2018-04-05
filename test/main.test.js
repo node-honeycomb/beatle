@@ -54,7 +54,7 @@ describe('app 基础功能', function () {
     const store = app.getStore();
 
     var testValue = 'something new';
-    var ev = new Event('input', { bubbles: true });
+    var ev = new Event('input', {bubbles: true});
     ev.simulated = true;
     var element = $('#ipt-change-name').get(0);
     element.value = testValue;

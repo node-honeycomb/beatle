@@ -6,11 +6,12 @@ import propTypes from 'prop-types';
 import warning from 'fbjs/lib/warning';
 import messages from '../core/messages';
 
-import getActions from './action';
+import {getActions} from './action';
 import modelToReducer from './modelToReducer';
 import configureStore from './store';
 import extractModules from '../core/extractModules';
 import Saga from './saga';
+import BaseModel from '../damo/baseModel';
 
 const reduxShape = {
   ajax: propTypes.object,
@@ -75,7 +76,7 @@ export default class ReduxSeed {
     this._instanceName = options.name || ReduxSeed.defaultApp;
     this._ajax = options.ajax;
     this._saga = new Saga();
-    this._isImmutable = !options.initialState || immutable.isImmutable(options.initialState);
+    this._isImmutable = options.initialState === undefined || immutable.isImmutable(options.initialState);
     this._init(this._instanceName);
     const initialState = this._isImmutable && options.initialState ? options.initialState.asMutable({deep: true}) : options.initialState;
     this._initStore(initialState, options.middlewares.concat(this._saga.getMiddleware(this.getModel.bind(this))), options.Models);
@@ -114,7 +115,24 @@ export default class ReduxSeed {
       if (!Model.displayName) {
         Model.displayName = name;
       }
-      const initialState = this._isImmutable ? immutable(Model.store) : Model.store;
+      if (Model.prototype instanceof BaseModel) {
+        Model = new Model({
+          name: Model.displayName,
+          ajax: this._ajax,
+          actions: Model.actions,
+          isImmutable: this._isImmutable
+        });
+        Object.defineProperty(Model, 'dispatch', {
+          get: () => {
+            return this.getStore().dispatch;
+          },
+          enumerable: true,
+          configurable: true
+        });
+      }
+      const store = Model.state || Model.store;
+      let initialState = this._isImmutable ? immutable(store) : store;
+
       redux.models[name] = Model;
       redux.actions[name] = getActions({
         modelName: name,
@@ -123,7 +141,7 @@ export default class ReduxSeed {
         initialState: initialState
       }, this);
       redux.rootReducer[name] = modelToReducer(Model, initialState, this._isImmutable);
-      return Model.store;
+      return store;
     }
   }
 
@@ -173,7 +191,7 @@ export default class ReduxSeed {
       const allState = redux
         .store
         .getState();
-      allState[name] = this._isImmutable ? immutable(initialState) : initialState;
+      allState[name] = initialState;
     }
   }
 

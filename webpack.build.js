@@ -29,6 +29,7 @@ const vendors = [
   'lodash',
   'moment',
   'bluebird',
+  'rxjs',
   '../../../../auto_models',
   '../../../../auto_routes'
 ];

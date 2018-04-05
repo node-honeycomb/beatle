@@ -8,10 +8,10 @@
  * ```
  */
 export function encodeActionType(ns, name, status) {
-  if (!status) {
-    return '@@' + ns + '/' + name;
-  } else {
+  if (status) {
     return '@@' + ns + '/' + name + '/' + status;
+  } else {
+    return '@@' + ns + '/' + name;
   }
 }
 
@@ -22,4 +22,12 @@ export function decodeActionType(type) {
 
 export function actionToType(actionName) {
   return '@@' + actionName.replace(/\./g, '/');
+}
+
+export function typeToAction(ns, name, status) {
+  if (status) {
+    return ns + '.' + name + '.' + status;
+  } else {
+    return ns + '.' + name;
+  }
 }

@@ -257,8 +257,7 @@ export default class Beatle {
    * | run([rootDom, basePath]) | rootDom `Object`, basePath `String` | 启动应用 |
    */
   getStore() {
-    return ReduxSeed.getRedux(this._setting.appName)
-      .store;
+    return ReduxSeed.getRedux(this._setting.appName).store;
   }
 
   getRoutes() {
@@ -651,7 +650,8 @@ export default class Beatle {
         bindings.forEach((binding) => {
           if (typeof binding === 'string' && models[binding]) {
             let mState = {};
-            for (let key in models[binding].store) {
+            const store = models[binding].state || models[binding].store;
+            for (let key in store) {
               mState[key] = state[binding][key];
             }
             if (flattern) {

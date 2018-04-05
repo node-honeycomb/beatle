@@ -29,7 +29,8 @@ const vendors = [
   'events',
   'lodash',
   'moment',
-  'bluebird'
+  'bluebird',
+  'rxjs'
 ];
 
 var webpackOpts = {
