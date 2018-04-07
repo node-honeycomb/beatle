@@ -23,10 +23,20 @@ export default class BaseModel {
   }
 
   _wrapperReducer(name, reducer, action) {
-    reducer = action.callback || reducer;
-    return (nextStore, payload) => {
-      nextStore[name] = reducer(nextStore, payload, this._initialState[name], nextStore[name], action);
-    };
+    if (typeof action.callback === 'function') {
+      reducer = action.callback || reducer;
+      return (nextStore, payload) => {
+        nextStore[name] = reducer(nextStore, payload, this._initialState[name], nextStore[name], action);
+      };
+    } else {
+      const map = {};
+      for (let status in action.callback) {
+        map[status] = (nextStore, payload) => {
+          nextStore[name] = action.callback[status](nextStore, payload, this._initialState[name], nextStore[name], action);
+        };
+      }
+      return map;
+    }
   }
 
   setState(nextState, ...args) {
@@ -62,13 +72,20 @@ export default class BaseModel {
               };
             } else {
               nextState[key] = cloneDeep(this._defaultActions[_callback.name]);
-              if (nextState[key].exec) {
-                delete nextState[key].exec.state;
-              }
-              nextState[key].callback = this._wrapperReducer(key, _callback, nextState[key]);
+              nextState[key].callback = this._wrapperReducer(key, _callback || getData, nextState[key]);
             }
           } else if (nextState[key].exec) {
-            nextState[key].callback = this._wrapperReducer(key, getData, nextState[key]);
+            let _callback;
+            if (typeof nextState[key].exec === 'string') {
+              if (this._defaultActions[nextState[key].exec]) {
+                nextState[key] = cloneDeep(this._defaultActions[nextState[key].exec]);
+              }
+              delete nextState[key].exec;
+              _callback = nextState[key].callback;
+            } else {
+              _callback = nextState[key].callback;
+            }
+            nextState[key].callback = this._wrapperReducer(key, _callback || getData, nextState[key]);
           } else {
             nextState[key] = {
               data: nextState[key],

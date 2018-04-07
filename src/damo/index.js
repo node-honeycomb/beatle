@@ -97,11 +97,11 @@ export default function enhanceBeatle(Beatle) {
       }
     }
 
-    service(selector, providers) {
+    service(providers) {
       const injector = this.injector;
       // #! 获取指定服务
-      if (typeof selector === 'string') {
-        return injector.getService(selector);
+      if (typeof providers === 'string') {
+        return injector.getService(providers);
       } else {
         if (!isPlainObject(providers)) {
           providers = [].concat(providers || []);

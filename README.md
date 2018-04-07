@@ -57,17 +57,27 @@ BeatlePro是一套轻量级前端框架，借助React、Redux实现应用界面�
 多应用场景下通过选择指定应用实例，从而完成单个应用的构建。
 
 ```javascript
-  // 应用A
-  new BeatlePro({
+  class Root extends React.Component{
+    render() {
+      return <h5>Hello Worlld {this.props.location.query.appName}!</h5>
+    }
+  }
+  // 创建应用A，输出Hello World A!
+  const appA = new BeatlePro({
     name: 'appA',
     ...
   });
-  // 应用B
-  new BeatlePro({
+  appA.route('/', Root, {query: {appName: 'A'}});
+  appA.run();
+  // 应用B，处处Hello Wolrd B!
+  const appB = new BeatlePro({
     name: 'appB',
     ...
   });
-  // 获取应用A实例
+  appB.route('/', Root, {query: {appName: 'B'}});
+  appB.run();
+
+  // 通过指定应用名来获取应用A实例
   BeatlePro.getApp('appA');
 ```
 
@@ -80,56 +90,201 @@ BeatlePro是一套轻量级前端框架，借助React、Redux实现应用界面�
 
 resource是接口调用的封装对象，一般来说，我们会愿意把接口单独定义到业务逻辑之外的对象中。
 
+* 来了解一下在BeatlePro中应用Model
+
 ```javascript
-  // 比如我们可以在actions定义一个行为方法getUser，这个行为调用时，会发起接口请求调用数据(exec有配置接口)
-  model = {
-    ...
+  // 1. 定义一个数据模型
+  const model = {
+    // 定义数据模型实例名（注意，以下通过实例名来获取到BeatlePro生成的model的实例
+    displayName: 'test',
+    // 定义数据结构
+    state: {
+      value: 1
+    },
+    // 定义数据行为
     actions: {
-      getUser: {
-        exec: {
-          url: '...',
-          method: 'GET'
+      // model注册后，set会变成一个方法，出入的参数，会写到paylaod.arguments属性。
+      set: (nextState, payload) => {
+        // nextState是state的最新版本, set定义第一个参数值，赋值给value属性
+        nextState.value = payload.arguments[0];
+        return nextState;
+      }
+    }
+  }
+  // 2. 初始化BeatlePro应用
+  const app = new BeatlePro({name: 'main'});
+  // 3. 注册model
+  app.model(model);
+  // 获取model实例
+  const modelInst = app.model('test')
+  // 打印输出 value: 1
+  console.log('value :' + modelInst.state.value); 
+  // 调用行为，写入数据
+  modelInst.set(2);
+  // 打印输出 value: 2
+  console.log('value :' + modelInst.state.value);
+  // 4. 定义组件，并挂在路由
+  class Root extends React.Component{
+    render() {
+      return <span>component props value :{this.props.test.value}</span>
+    }
+  }
+  // 5. 把组件和数据模型进行绑定
+  const ConnectRoot = BeatlePro.connect(['test'], Root);
+  // 路由响应时，组件输出 component props value :2
+  app.route('/', ConnectRoot);
+  // 调用行为，写入数据
+  modelInst.set(3);
+  // 组件自动更新，并输出 component props value :3
+
+  // 运行应用
+  app.run();
+```
+
+* 数据模型可以通过class来创建
+
+```javascript
+// 1. 定义一个数据模型
+  class Model extends BeatlePro.BaseModel {
+    static displayName: 'test';
+    state = {
+      value: 1
+    }
+    set(v) {
+      // this.setState(obj, ...args), 通过底部传入参数，通过payload.argumnets获取
+      return this.setState({
+        value: (nextState, payload) => {
+          return payload.argumens[0];
+        }
+      }, v);
+    }
+  }
+```
+
+* model的数据行为异步时
+
+```javascript
+  // 1. 通过纯对象创建
+  const model = {
+    displayName: 'test',
+    state: {
+      value: 1
+    },
+    actions: {
+      // set: callback 改为 set: {callback}, 异步行为包括数据预处理，都需要通过exec属性来返回。
+      set: {
+        // 通过exec返回的数据（获取promise，其接受的数据)。通过payload.data获取
+        exec: (v) => {
+          return new Promise(resolve => {
+            setTimeout(() => {
+              resolve(v)
+            }, 100);
+          })
         },
-        // 对于异步的action，有3中状态的回调
-        callback: {
-          // 发送请求之前，
-          start: (nextStore, playload) => {
-
-          },
-          // 请求成功并接受值后
-          success: (nextStore, payload) => {
-
-          },
-          // 请求失败或者拒绝值后
-          error: (nextStore, payload) => {
-
-          }
+        callback: (nextState, payload) => {
+          nextState.value = payload.data;
+          return nextState;
         }
       }
     }
   }
-  // 实际上我们可以把exec部分抽离到model之外，比如resource中
-  resource = {
-    getUser: {
-      url: '...',
-      method: 'GET'
+  // 2. 通过class创建
+  class Model extends BeatlePro.BaseModel {
+    static displayName: 'test';
+    state = {
+      value: 1
     }
-  }
-  // 原先的model做下调整
-  model = {
-    ...
-    actions: {
-      getUser: {
-        callback: {
-          success: (nextStore, payload) => {
-            
+    set(v) {
+      return this.setState({
+        // value: callback 改为 value: {callback}
+        value: {
+          // exec: () => promise 可以改为exec: promise, exec返回的数据，通过payload.data获取
+          exec: (v) => {
+            return new Promise(resolve => {
+              setTimeout(() => {
+                resolve(v)
+              }, 100);
+            })
+          },
+          callback: (nextState, payload) => {
+            // 单一职责，返回的数据，只会更新value值
+            return payload.data;
           }
         }
-      }
+      }, v);
     }
   }
-  // 然后我们通过BeatlePro.createModel来生成最终的Model
-  Model = BeatlePro.createModel(model, resource);
+```
+
+* 数据模型的异步行为通过接口获取数据
+
+```javascript
+  class Model extends BeatlePro.BaseModel {
+    static displayName: 'test';
+    state = {
+      value: 1
+    }
+    set(v) {
+      return this.setState({
+        value: {
+          // !!注意，此处exec只是接口的配置，这是BeatlePro支持的一种特殊的exec形式，其内部会通过fetch来触发调用
+          exec: {
+            url: 'http://api.github.com', 
+            method: 'get', 
+            data: {id: v}
+          }
+          /**
+           * 相同的方式，还有2种办法
+           * 1. exec: fetch('http://api.github.com', v),
+           * 2. exec: v => return fetch('http://api.github.com', {id: v});
+           */
+          callback: (nextState, payload) => {
+            return payload.data;
+          }
+        }
+      }, v);
+    }
+  }
+```
+
+* 回到主题，createModel的目的就是抽象exec，独立维护在model之外
+
+```javascript
+  const resource = {
+    set: {
+      url: 'http://api.github.com', 
+      method: 'get', 
+      data: {id: v}
+    }
+  }
+
+  // 以下是装饰器用法，也可以通过 Model = BeatlePro.createMode(resource)(Model);
+  @BeatlePro.createMode(resource)
+  class Model extends BeatlePro.BaseModel {
+    static displayName: 'test';
+    state = {
+      value: 1
+    }
+    set(v) {
+      return this.setState({
+        value: {
+          // !!注意，exec为合并进来的Resource对应的属性，如果没有找到则当做exec不存在
+          exec: 'set'
+          callback: (nextState, payload) => {
+            return payload.data;
+          }
+        }
+      }, v);
+      // 更简洁的写法, 通过value对应的函数名来指定exec
+      /**
+       * return this.setState({
+       *  value: function set(nextState, payload){
+       *    return payload.data;
+       *  }
+       * })
+       */
+    }
+  }
 ```
 
 > 这样下来，所有的接口都单独定义在resource对象下，对于大的应用会存在很多resource。对于resource我们可以在业务之外单独做调试，这样服务分层的管理，代码更加健壮和清晰。
@@ -219,6 +374,9 @@ seed实例是[ReduxSeed](#class-reduxseed)实例，`app.getStore()`实际上是�
 | routesFactory(routes, option) | routes `Array︱Object︱Context`, option `Object` | 批量注册路由，可以传入option做更多处理 |
 | model(Model) | Model `Object` | 注册数据模型 |
 | connect(bindings, component[, context, flattern]) | bindings `String︱Object︱Array`, component `ReactComponent`, context `Object`, flattern `Boolean` | 设置视图, binding指定注入数据模型或者根据数据模型注入数据和方法 |
+| service(providers) | providers `<Object|Function|Array>` | 注册全局服务（通用js对象）|
+| observable(obj) | obj `<Array|Promise|Observable>` | 把数据转为观察序列 |
+| view(Selector, component, providers) | Selector `Object`, component: `ReactComponent`, providers: `Array<Object|Function|Array>` | 设置视图，并注入context |
 | run([rootDom, basePath]) | rootDom `Object`, basePath `String` | 启动应用 |
 
 > 当app为BeatlePro的主应用时，可以通过BeatlePro.xxx直接调用app对应的方法。
@@ -304,6 +462,259 @@ seed实例是[ReduxSeed](#class-reduxseed)实例，`app.getStore()`实际上是�
   app.run();
   // 访问/, console输出为：hello Trump!
 ```
+
+### app.service(providers)
+* providers <`Function|Object|Array`> 注入的全局的服务JS类
+
+```javascript
+  const app = new BeatlePro({name: 'main'});
+  function A() {
+    return {
+      v: 1
+    }
+  };
+  // B依赖于A，通过数组最后一位是服务定义，其他项为依赖的服务名
+  const B = ['a', function(a) {
+    return {
+      v: a.v + 1
+    }
+  }];
+  // B是其中的一种依赖方式，C是另外一种依赖方式，通过contextTypes属性声明
+  class C{
+    static contextTypes: {
+      b: React.PropTypes.object.isRequired
+    }
+    get v() {
+      return this.context.b.v + 1;
+    }
+  }
+  
+  function D(c) {
+    return c.v + 1;
+  }
+  // D是另外一种依赖方式，通过$inject声明，是不是很熟悉，ng 1.x中服务依赖也是如此
+  D.$inject = ['c'];
+
+  // 注册服务A，通过displayName来指定服务名
+  A.displayName = 'a';
+  const a = app.service('a');
+  // 输出 1
+  console.log(a.v);
+  // 注册服务, 通过key来指定服务实例名称
+  app.service({
+    b: B,
+    c: C,
+    d: D
+  });
+  // 通过名称获取服务实例
+  const b = app.service('b');
+  // 输出2, 因为b依赖于a + 1, B的依赖会从全局服务中找
+  console.log(a.v);
+  const d = app.service('d');
+  // 输出4, 因为d依赖于c + 1， c依赖于b + 1， b依赖于a + 1
+  console.log(d.v);
+```
+### app.observable(obj)
+* obj <`Array|Promise|Observable`> 指定需要转为序列的数据
+* return <`Observable`> 返回可订阅序列
+
+```javascript
+const stream = app.observable([1, 2, 3]);
+stream.subscribe(v => {
+  console.log(v + ', ');
+});
+// 输出 1, 2, 3
+
+const stream = app.observable(Promise.resolve('123'));
+stream.subscribe(v => {
+  console.log(v);
+});
+// 输出 123
+
+const promise = new Promise(resolve => {
+  setTimeout(() => {
+    resolve({name: 123});
+  }, 1000);
+});
+// 针对react特殊定义，可以输出异步组件
+ReactDOM.render( => (<div>Hi, {app.observable(promise).render(d => d.name)}</div>), document.body);
+```
+
+> Observable序列是rxjs中的概念，适用于把异步数据按时间轴转换为有顺序的序列数据，方便操作。
+
+### app.view(Selector, component, providers)
+* Selector <`Object`> 指定需要绑定的数据选择器
+* component <`ReactComponent`> 指定组件来绑定
+* providers <`Array<Object|Function|Array>`> 注入其他的服务，使得组件通过this.context可以访问到。
+* return <`ReactComponent`> 返回新的React组件
+
+```javascript
+  class UserModel extends BeatlePro.BaseModel {
+    state = {
+      profile: {
+        name: 'Guest'
+      }
+    }
+    login(name) {
+      return this.setState({
+        profile: {
+          exec: fetch('https://api.github.com/users/' + name),
+          // 每次都需要写callback，而很多callback的处理基本都是统一的，比如接口的CRUD的处理。
+          // 以下等同于BeatleProp.crud.get
+          callback: (nextProps, payload) => {
+            return payload.data;
+          }
+        }
+      })
+    }
+  }
+
+  class Selector extends BeatleProp.BaseSelector{
+    // inputs相当于connect的 stateMergeToProps, 相对应的outputs等同于connect的 actionMergeToProps
+    get inputs() {
+      return (state, dispatch) => {
+        return {
+          profile: state.user.profile
+        }
+      }
+    }
+    // 这是数据选择器的钩子函数，在组件初始化完成时自动触发。
+    initialize() {
+      this.getModel('user').login('baqian');
+    }
+  }
+
+  class Root extends React.Component{
+    static propTypes = {
+      profile: React.Proptypes.object
+    }
+
+    static contextTypes = {
+      test: React.Proptypes.object
+    }
+
+    render() {
+      // 组件会先输出 Hello Guest!，接口调用成功后，更新为 Hello baqian
+      return (<div>{this.context.test.title} {this.props.profile.login}!</div>)
+    }
+  }
+  // 和BeatleProp.connect不同，connect绑定数据模型，view绑定数据选择器
+  Root = BeatleProp.view(Selector, Root, {
+    test: function() {
+      return {
+        title: 'Hello'
+      }
+    }
+  });
+```
+
+> 数据选择器是一个新的概念，在复杂的场景，一个组件往往会调用多个model，通过数据选择器来统一管理model，提高代码可读性
+
+* BeatleProp.crud
+
+这是action数据处理的模板，以上的UserModel通过crud重新处理如下:
+
+```javascript
+  class UserModel extends BeatlePro.BaseModel {
+    state = {
+      profile: {
+        name: 'Guest'
+      }
+    }
+    login(name) {
+      return this.setState({
+        profile: {
+          exec: fetch('https://api.github.com/users/' + name),
+          callback: BeatleProp.crud.get
+        }
+      })
+    }
+  }
+```
+
+crud的全部接口
+
+```javascript
+  crud = {
+    item: {},
+    itemsEntry: {
+      data: [],
+      loading: false,
+      total: 0,
+      pageSize: 10,
+      page: 1
+    },
+    get,    // 获取数据
+    create, // 新增
+    update, // 更新
+    query,  // 分页形式
+    reset   // 恢复为初始化数据
+  }
+```
+
+举个例子，通过crud创建一个UserModel，能节省大量代码
+
+```javascript
+  class UserModel extends BaseModel {
+    static displayName = 'user';
+
+    state = {
+      user: crud.item,
+      usersEntry: crud.itemsEntry
+    }
+    // 必须有id属性，用来识别指定数据项，从而判断是更新还是创建
+    id = 'id';
+
+    get(id) {
+      return this.setState({
+        user: {
+          exec, // exec是异步逻辑处理
+          callback: crud.get
+        }
+      }, {id: id});
+    }
+
+    delete(id) {
+      return this.setState({
+        usersEntry: {
+          exec,
+          callback: crud.delete
+        }
+      }, {id: id});
+    }
+
+    update(user) {
+      return this.setState({
+        usersEntry: {
+          exec,
+          callback: crud.update
+        }
+      }, user);
+    }
+
+    create(user) {
+      return this.setState({
+        usersEntry: {
+          exec,
+          callback: crud.create
+        }
+      }, user);
+    }
+
+    query(params) {
+      return this.setState({
+        usersEntry: {
+          exec,
+          callback: crud.query
+        }
+      }, params);
+    }
+  }
+```
+
+
+
+
 
 ### app.route([path, routes])
 * path <`String`>, 当存在path时，则是配置单个路由，此时routes应该为React组件或者BeatlePro子应用。

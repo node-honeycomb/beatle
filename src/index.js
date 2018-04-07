@@ -233,7 +233,7 @@ const docorators = {
   }),
   // decorator for view
   view: getDecorator((app, option, BaseComponent) => {
-    return app.view(option.selector, BaseComponent, option.selector ? option.providers : option.flattern);
+    return app.view(option.selector, BaseComponent, option.providers);
   })
 };
 
