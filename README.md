@@ -374,7 +374,7 @@ seed实例是[ReduxSeed](#class-reduxseed)实例，`app.getStore()`实际上是�
 | routesFactory(routes, option) | routes `Array︱Object︱Context`, option `Object` | 批量注册路由，可以传入option做更多处理 |
 | model(Model) | Model `Object` | 注册数据模型 |
 | connect(bindings, component[, context, flattern]) | bindings `String︱Object︱Array`, component `ReactComponent`, context `Object`, flattern `Boolean` | 设置视图, binding指定注入数据模型或者根据数据模型注入数据和方法 |
-| service(providers) | providers `<Object|Function|Array>` | 注册全局服务（通用js对象）|
+| service(providers, isGlobal) | providers `<Object|Function|Array>`, isGlobal `Boolean` | 注册全局服务（通用js对象）|
 | observable(obj) | obj `<Array|Promise|Observable>` | 把数据转为观察序列 |
 | view(Selector, component, providers) | Selector `Object`, component: `ReactComponent`, providers: `Array<Object|Function|Array>` | 设置视图，并注入context |
 | run([rootDom, basePath]) | rootDom `Object`, basePath `String` | 启动应用 |
@@ -463,8 +463,9 @@ seed实例是[ReduxSeed](#class-reduxseed)实例，`app.getStore()`实际上是�
   // 访问/, console输出为：hello Trump!
 ```
 
-### app.service(providers)
+### app.service(providers, isGlobal)
 * providers <`Function|Object|Array`> 注入的全局的服务JS类
+* isGlobal <`Boolean`> 是否是全局的（跨所有应用）
 
 ```javascript
   const app = new BeatlePro({name: 'main'});

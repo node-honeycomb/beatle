@@ -33,6 +33,8 @@ function getState(currentState, keys) {
   return state;
 }
 
+const globalInjector = new Injector();
+
 export default function enhanceBeatle(Beatle) {
   return class Damo extends Beatle {
     static crud = crud;
@@ -97,8 +99,8 @@ export default function enhanceBeatle(Beatle) {
       }
     }
 
-    service(providers) {
-      const injector = this.injector;
+    service(providers, isGlobal) {
+      const injector = isGlobal ? globalInjector : this.injector;
       // #! 获取指定服务
       if (typeof providers === 'string') {
         return injector.getService(providers);
