@@ -86,7 +86,9 @@ function mixinApiToStatic(ClassObj, appName) {
     'connect',
     'route',
     'toBindings',
-    'run'
+    'run',
+    'observable',
+    'view'
   ];
   apiMethods.forEach(method => {
     ClassObj[method] = function (...args) {

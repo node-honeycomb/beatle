@@ -68,9 +68,9 @@ var webpackOpts = {
     ]
   },
   output: {
-    filename: 'beatle.js',
+    filename: 'beatlePro.js',
     path: path.resolve(__dirname, 'dist/core'),
-    library: 'beatle',
+    library: 'beatlePro',
     libraryTarget: 'commonjs2'
   },
   externals: vendors,

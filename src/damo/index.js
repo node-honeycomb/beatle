@@ -1,21 +1,42 @@
 import immutable from 'seamless-immutable';
 import isPlainObject from 'lodash/isPlainObject';
 import warning from 'fbjs/lib/warning';
+import connect from '../base/connect';
 import logMessages from '../core/messages';
 import Injector from './injector';
 import AsyncComponent from './asyncComponent';
 import service from './service';
 import BaseSelector from './baseSelector';
 import BaseModel from './baseModel';
+import {EventEmitter} from 'events';
+import {Observable} from 'rxjs/Observable';
+import crud from './crud';
 
+const emitter = new EventEmitter();
 // #! 自增唯一标识
 let increment = 0;
 function guid(name) {
   return name + (++increment);
 }
 
+function getState(currentState, keys) {
+  let state;
+  try {
+    state = currentState;
+    for (let i = 0, len = keys.length; i < len; i++) {
+      state = state[keys[i]];
+    }
+  } catch (e) {
+    warning(false, logMessages.selectError, 'select', keys.join('.'), 'damo', 'Beatle-pro');
+    window.console.error(e);
+  }
+  return state;
+}
+
 export default function enhanceBeatle(Beatle) {
   return class Damo extends Beatle {
+    static crud = crud;
+
     static BaseModel = BaseModel;
     static BaseSelector = BaseSelector;
     static Injector = Injector;
@@ -45,7 +66,7 @@ export default function enhanceBeatle(Beatle) {
     }
 
     deserialize(obj, deep) {
-      if (obj !== undefined && immutable.isImmutable(obj)) {
+      if (obj !== undefined && obj.asMutable) {
         return obj.asMutable({deep: deep});
       } else {
         return obj;
@@ -57,59 +78,46 @@ export default function enhanceBeatle(Beatle) {
     }
 
     select(keyStr, isObservable) {
-      const currentState = this.seed.get('store').getState();
+      const store = this.seed.get('store');
+      const currentstate = store.getState();
       const keys = keyStr.split('.');
-      let state;
-      try {
-        state = currentState;
-        for (let i = 0, len = keys.length; i < len; i++) {
-          state = state[keys[i]];
-        }
-      } catch (e) {
-        warning(false, logMessages.selectError, 'select', keyStr, 'damo', 'Beatle-pro');
-        window.console.error(e);
-      }
+      const state = getState(currentstate, keys);
       if (isObservable) {
-        return this.observable(state);
+        // #! 这里有问题，要通过store.subscribe来实现
+        const eventName = guid('event');
+        store.subscribe(() => {
+          const _state = getState(store.getState(), keys);
+          if (_state !== state) {
+            emitter.emit(eventName, _state.asMutable ? _state.asMutable({deep: true}) : _state);
+          }
+        });
+        return this.observable(Observable.fromEvent(emitter, eventName));
       } else {
         return state;
       }
     }
 
-    service(selector, BaseComponent, providers) {
+    service(selector, providers) {
       const injector = this.injector;
       // #! 获取指定服务
-      if (typeof providers === 'string') {
-        return injector.getService(providers);
+      if (typeof selector === 'string') {
+        return injector.getService(selector);
       } else {
         if (!isPlainObject(providers)) {
           providers = [].concat(providers || []);
         }
-        // #! 注入到组件的context
-        if (BaseComponent) {
-          // #! selector实例
-          if (selector instanceof BaseSelector) {
-            selector.displayName = selector.displayName || guid('selector');
-            selector = injector.instantiate(selector, selector.displayName);
-          }
-          service(providers, BaseComponent, {
-            injector: injector,
-            selector: selector
-          });
+        // #! 否则注入到全局服务中
+        if (Array.isArray(providers)) {
+          this
+            .injector
+            .setServices(providers);
         } else {
-          // #! 否则注入到全局服务中
-          if (Array.isArray(providers)) {
-            this
-              .injector
-              .setServices(providers);
-          } else {
-            this
-              .injector
-              .setServices(Object.keys(providers).map(key => {
-                providers[key].displayName = providers[key].displayName || key;
-                return providers[key];
-              }));
-          }
+          this
+            .injector
+            .setServices(Object.keys(providers).map(key => {
+              providers[key].displayName = providers[key].displayName || key;
+              return providers[key];
+            }));
         }
       }
     }
@@ -119,23 +127,26 @@ export default function enhanceBeatle(Beatle) {
       if (selector.prototype instanceof BaseSelector) {
         selector.displayName = selector.displayName || guid('selector');
         selector = this.injector.instantiate(selector, selector.displayName);
-      } else {
-        const models = [].concat[selector];
-
-        selector = new BaseSelector();
-        selector.dataBindings = models;
-        selector.eventBindings = models;
-        if (providers === true) {
-          selector.flattern = true;
-          providers = null;
+        if (selector.bindings) {
+          Object.assign(selector, this.toBindings(selector.bindings));
         }
+      } else {
+        selector = new BaseSelector();
+
+        Object.assign(selector, this.toBindings([].concat[selector]));
       }
       // #! 绑定组件, 连接到redux
-      SceneComponent = this.connect(selector, SceneComponent, selector.flattern);
+      SceneComponent = connect(selector, this.dispatch.bind(this))(SceneComponent);
       // #! 额外注入context到组件中
-      this.service(providers, SceneComponent, selector);
 
-      return SceneComponent;
+      selector.getModel = (name) => {
+        return this.model(name);
+      };
+
+      return service(providers, SceneComponent, {
+        injector: this.injector,
+        selector: selector
+      });
     }
   };
 }

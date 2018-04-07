@@ -8,8 +8,10 @@ export default class BaseSelector extends EventEmitter {
     super();
     this._eventsMap = {};
     this.setMaxListeners(Number.MAX_VALUE);
-  }
 
+    this.dataBindings = this.inputs;
+    this.eventBindings = this.outputs;
+  }
   /**
    * emitter = {
    *  eventName,
@@ -128,7 +130,7 @@ export default class BaseSelector extends EventEmitter {
             .of(option.end);
         }
       })
-      .takeWhile(res => option.next(res));
+      .takeWhile(res => option.hasTick(res));
     // #! 标记有轮询
     source.polling = true;
     return source;
@@ -156,10 +158,13 @@ export default class BaseSelector extends EventEmitter {
           if (res === option.start) {
             return poller._current || poller.tick();
           } else {
-            if (res !== option.end && poller.hasTick(res)) {
+            if (option.hasTick(res)) {
               return poller.tick();
             }
           }
+        },
+        hasTick: (res) => {
+          return res !== option.end && poller.hasTick(res);
         }
       };
       return this._getPoller(option);
@@ -172,6 +177,9 @@ export default class BaseSelector extends EventEmitter {
           if (res === option.start && res !== option.end) {
             return option.action(res);
           }
+        },
+        hasTick: (res) => {
+          return res === option.start && res !== option.end;
         }
       };
       return this._getPoller(newOption);

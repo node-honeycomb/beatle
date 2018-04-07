@@ -39,11 +39,11 @@ export default class ReduxSeed {
     for (let key in Resource) {
       if (Model.actions[key]) {
         Model.actions[key].exec = Resource[key];
-      } else if (Resource[key].name) {
+      } else {
         Model.actions[key] = {
           exec: Resource[key],
           callback: (nextStore, payload) => {
-            nextStore[Resource[key].name] = payload.data;
+            return payload.data;
           }
         };
       }
@@ -122,6 +122,7 @@ export default class ReduxSeed {
           actions: Model.actions,
           isImmutable: this._isImmutable
         });
+        Model.actions = {};
         Object.defineProperty(Model, 'dispatch', {
           get: () => {
             return this.getStore().dispatch;
@@ -186,8 +187,10 @@ export default class ReduxSeed {
       redux
         .store
         .replaceReducer(rootReducer);
-      redux
-        .store.runSaga(this._saga.effect(name));
+      const effects = this._saga.effect(name);
+      if (effects) {
+        redux.store.runSaga(effects);
+      }
       const allState = redux
         .store
         .getState();

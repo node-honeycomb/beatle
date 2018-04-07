@@ -689,7 +689,9 @@ export default class Beatle {
             for (let key in actions[binding]) {
               mAction[key] = (...args) => {
                 const result = actions[binding][key].apply(null, args);
-                if (typeof result === 'function') {
+                if (result instanceof Promise) {
+                  return result;
+                } else if (typeof result === 'function') {
                   return result(dispatch);
                 } else if (result !== undefined) {
                   return dispatch(result);
@@ -711,7 +713,9 @@ export default class Beatle {
                 if (actions[keys[0]] && keys[1] === 'actions') {
                   iAction[key] = (...args) => {
                     const result = actions[keys[0]][keys[2]].apply(null, args);
-                    if (typeof result === 'function') {
+                    if (result instanceof Promise) {
+                      return result;
+                    } else if (typeof result === 'function') {
                       return result(dispatch);
                     } else if (result !== undefined) {
                       return dispatch(result);

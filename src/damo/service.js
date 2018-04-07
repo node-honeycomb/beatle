@@ -1,3 +1,4 @@
+import PropTypes from 'prop-types';
 import warning from 'fbjs/lib/warning';
 import logMessages from '../core/messages';
 
@@ -13,82 +14,84 @@ export default function service(providers, Component, {injector, selector}) {
     return service || getParantService.call(this, name) || injector.getService(name);
   }
 
-  const _constructor = Component.prototype.constructor;
-  Component.prototype.constructor = function constructor(props, context) {
-    _constructor.call(this, props, context);
+  class NewComponent extends Component {
+    constructor(props, context) {
+      super(props, context);
+      const services = this._services = {
+        selector: selector
+      };
 
-    const services = this._services = {
-      selector: selector
-    };
+      NewComponent.childContextTypes = NewComponent.childContextTypes || {};
+      NewComponent.childContextTypes.selector = PropTypes.object;
+      if (Array.isArray(providers)) {
+        providers.forEach(Provider => {
+          warning(Provider.displayName, logMessages.displayName, 'contructor', 'service', 'Beatle-pro');
+          NewComponent.childContextTypes[Provider.displayName] = PropTypes.object;
+          services[Provider.displayName] = injector.instantiate(Provider, Provider.displayName, getService.bind(this));
+        });
+      } else {
+        for (let name in providers) {
+          NewComponent.childContextTypes[name] = PropTypes.object;
+          services[name] = injector.instantiate(providers[name], name, getService.bind(this));
+        }
+      }
 
-    if (Array.isArray(providers)) {
-      providers.forEach(Provider => {
-        warning(Provider.displayName, logMessages.displayName, 'contructor', 'service', 'Beatle-pro');
+      if (context.selector) {
+        services.parentSelector = context.selector;
+        context.selector = selector;
+      }
+      // 提升当前组件的context的优先级
+      for (let name in context) {
+        if (services[name] !== undefined) {
+          context[name] = services[name];
+        }
+      }
 
-        services[Provider.displayName] = injector.instantiate(Provider, Provider.displayName, getService.bind(this));
-      });
-    } else {
-      for (let name in providers) {
-        services[name] = injector.instantiate(providers[name], name, getService.bind(this));
+      if (selector) {
+        // context也从当前组件同一个级别
+        for (let name in selector.context) {
+          selector.context[name] = getService.call(this, name);
+        }
+        // 每次获取props都是最新的
+        Object.defineProperty(selector.context, 'props', {
+          get: () => {
+            return this.props;
+          },
+          enumerable: true,
+          configurable: true
+        });
+
+        // 完成后触发钩子函数
+        try {
+          selector.initialize && selector.initialize(this.props);
+        } catch (e) {
+          window.console.error(e);
+        }
       }
     }
 
-    if (context.selector) {
-      services.parentSelector = context.selector;
-      context.selector = selector;
-    }
-    // 提升当前组件的context的优先级
-    for (let name in context) {
-      if (services[name] !== undefined) {
-        context[name] = services[name];
+    getChildContext() {
+      // 子组件可以获取到providers注入的服务
+      if (super.getChildContext) {
+        const childContext = super.getChildContext();
+        return Object.assign(childContext, this._services);
+      } else {
+        return this._services;
       }
     }
 
-    if (selector) {
-      // context也从当前组件同一个级别
-      for (let name in selector.context) {
-        selector.context[name] = getService.call(this, name);
-      }
-      // 每次获取props都是最新的
-      Object.defineProperty(selector.context, 'props', {
-        get: () => {
-          return this.props;
-        },
-        enumerable: true,
-        configurable: true
-      });
-
-      // 完成后触发钩子函数
-      try {
-        selector.initialize && selector.initialize(this.props);
-      } catch (e) {
-        window.console.error(e);
+    componentWillUnmount() {
+      super.componentWillUnmount && super.componentWillUnmount();
+      const services = this._services;
+      for (let name in services) {
+        if (services[name].destroy) {
+          services[name].destroy();
+        }
+        if (services[name].dispose) {
+          services[name].dispose();
+        }
       }
     }
-  };
-
-  // 子组件可以获取到providers注入的服务
-  const _getChildContext = Component.prototype.getChildContext;
-  Component.prototype.getChildContext = function getChildContext() {
-    if (_getChildContext) {
-      const childContext = _getChildContext.call(this);
-      return Object.assign(childContext, this._services);
-    } else {
-      return this._services;
-    }
-  };
-
-  const _unmount = Component.prototype.componentWillUnmount;
-  Component.prototype.componentWillUnmount = function componentWillUnmount() {
-    const services = this._services;
-    for (let name in services) {
-      if (services[name].destroy) {
-        services[name].destroy();
-      }
-      if (services[name].dispose) {
-        services[name].dispose();
-      }
-    }
-    _unmount.call(this);
-  };
+  }
+  return NewComponent;
 }

@@ -5,7 +5,9 @@ function deepMerge(a, b, extra) {
   for (let key in a) {
     if (Object(a[key]) === a[key] && Object(b[key]) === b[key]) {
       obj[key] = Object.assign({}, a[key], b[key]);
-    } else if (b[key] !== undefined) {
+    } else if (b[key] === undefined) {
+      obj[key] = a[key];
+    } else {
       obj[key] = b[key];
     }
   }

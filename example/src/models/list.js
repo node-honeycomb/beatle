@@ -9,7 +9,7 @@ export default class ListModel extends BaseModel {
   }
 
   getMaintainers() {
-    return this.execQuery('getMaintainers', (nextStore, payload) => {
+    return this.execute('getMaintainers', (nextStore, payload) => {
       nextStore.maintainers = payload.data.maintainers;
     });
   }

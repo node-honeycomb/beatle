@@ -4,6 +4,7 @@ import isPlainObject from '../core/isPlainObject';
 import isGenerator from './isGenerator';
 import messages from '../core/messages';
 import warning from 'fbjs/lib/warning';
+import BaseModel from '../damo/baseModel';
 
 export function setReducers(model, modelName, actionName, actionCfg, async) {
   const callback = actionCfg.reducer || actionCfg.callback || noop;
@@ -133,7 +134,17 @@ export function getActions({
   });
 
   const actions = model.actions || {};
-  model._actions = model._actions || {};
+  model._actions = model._actions;
+  if (!model._actions) {
+    model._actions = {};
+    if (model instanceof BaseModel) {
+      const keys = Object.getOwnPropertyNames(model.__proto__);
+      for (let i = 1, len = keys.length; i < len; i++) {
+        model._actions[keys[i]] = model[keys[i]].bind(model);
+      }
+    }
+  }
+
   model.effects = model.effects || {};
 
   Object.keys(actions).forEach((actionKey) => {
@@ -246,7 +257,10 @@ export function getActions({
   });
 
   // 存在effect时走saga
-  saga.effect(model);
+  if (Object.keys(model.effects).length) {
+    saga.effect(model);
+  }
+
   return model._actions;
 }
 
@@ -292,7 +306,7 @@ export function getProcessorByExec(model, initialState, modelName, actionName, e
         }
 
         // #! is promise
-        if (result && result.then) {
+        if (result instanceof Promise) {
           result.then(successCallback, errorCallback);
         } else {
           successCallback(result);
@@ -345,7 +359,7 @@ export function getProcessor(model, initialState, modelName, actionName, func, g
             return Promise.resolve(modelState[name] && modelState[name].asMutable({deep: deep}));
           }
         }));
-        if (result && result.then) {
+        if (result instanceof Promise) {
           return result;
         } else {
           return Promise.resolve(result);
