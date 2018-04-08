@@ -17,8 +17,11 @@ const vendors = [
   'redux-thunk',
   'react-intl',
   'react-mixin',
+  'react-addons-pure-render-mixin',
+  'create-react-class',
   'cuid',
   'redux',
+  'redux-saga',
   'redux-promise-middleware',
   'react-redux-loading-bar',
   'hoist-non-react-statics',
@@ -30,6 +33,8 @@ const vendors = [
   'lodash',
   'moment',
   'bluebird',
+  'querystring',
+  'url',
   'rxjs'
 ];
 

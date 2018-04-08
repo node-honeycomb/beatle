@@ -70,9 +70,14 @@ export default class BaseModel {
               nextState[key] = {
                 callback: this._wrapperReducer(key, _callback, nextState[key])
               };
-            } else {
+            } else if (this._defaultActions[_callback.name]) {
               nextState[key] = cloneDeep(this._defaultActions[_callback.name]);
               nextState[key].callback = this._wrapperReducer(key, _callback || getData, nextState[key]);
+            } else {
+              nextState[key] = {
+                callback: _callback
+              };
+              nextState[key].callback = this._wrapperReducer(key, _callback, nextState[key]);
             }
           } else if (nextState[key].exec) {
             let _callback;
@@ -80,7 +85,6 @@ export default class BaseModel {
               if (this._defaultActions[nextState[key].exec]) {
                 nextState[key] = cloneDeep(this._defaultActions[nextState[key].exec]);
               }
-              delete nextState[key].exec;
               _callback = nextState[key].callback;
             } else {
               _callback = nextState[key].callback;

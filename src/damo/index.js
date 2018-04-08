@@ -45,10 +45,8 @@ export default function enhanceBeatle(Beatle) {
     static AsyncComponent = AsyncComponent;
 
     constructor(opt) {
+      opt.injector = new Injector(opt && opt.providers);
       super(opt);
-
-      // #! 初始化服务注入器，并注册全局服务
-      this.injector = new Injector(opt && opt.providers);
     }
 
     /**

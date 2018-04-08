@@ -1,6 +1,6 @@
 {
   "name": "beatle-pro",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "main": "./dist/core/beatlePro.js",
   "author": "dtboost <dtboost@aliyun.com>",
   "description": "Beatle是一套完整前端开发框架，用来构建客户端应用。",
@@ -84,6 +84,7 @@
     "power-assert": "1.4.4",
     "react": "15.5.0",
     "react-dom": "15.5.0",
+    "redux-saga": "0.15.5",
     "redux-logger": "2.4.0",
     "style-loader": "0.19.0",
     "supertest": "1.1.0",

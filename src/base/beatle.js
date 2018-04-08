@@ -80,6 +80,7 @@ export default class Beatle {
     this.seed = null;
     this.ajax = null;
     this._hasRendered = false;
+    this.injector = options.injector;
 
     Beatle.instances[this._setting.appName] = this;
     if (!options.subApp) {
