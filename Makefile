@@ -25,10 +25,6 @@ auto_test: build
 	@echo 'to do...'
 
 publish:
-	@$(eval VERSION=`node -e 'console.log(require("./package.json").version)'`)
-	@$(eval TAG='publish/'${VERSION})
-	@git tag ${TAG}
-	git push origin ${TAG}
 	npm publish --registry=http://registry.npmjs.org
 
 test:

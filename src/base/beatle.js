@@ -218,19 +218,20 @@ export default class Beatle {
     if (routeConfig.component instanceof Beatle) {
       const component = routeConfig.component;
       const self = this;
+      const basePath = routeConfig.path || routeConfig.name;;
       const newComponent = createReactClass({
         render() {
-          const path = routeConfig.path || routeConfig.name;
           return React.createElement(Provider, {
             store: component.getStore()
           }, React.createElement(Router, {
-            history: self._withBasename(path),
+            history: self._withBasename(basePath),
             routes: component._setting.routes
           }));
         }
       });
       newComponent.routeOptions = component.routeOptions || {};
       routeConfig.component = newComponent;
+      routeConfig.path = basePath + '(/**)';
     } else if (strict && !routeConfig.component.routeOptions) {
       routeConfig = false;
     }
@@ -416,7 +417,7 @@ export default class Beatle {
    *  });
    * ```
    */
-  route(path, RouteComponent) {
+  route(path, RouteComponent, routeConfig) {
     // #! 返回指定路由
     if (arguments.length === 1 && typeof path === 'string') {
       return this._setting.routesMap[path];
@@ -424,6 +425,9 @@ export default class Beatle {
     if (RouteComponent) {
       RouteComponent = Beatle.fromLazy(RouteComponent, this);
       // #! 设置路由
+      if (routeConfig) {
+        RouteComponent.routeOptions = Object.assign(RouteComponent.routeOptions || {}, routeConfig);
+      }
       const childRoute = route(path, RouteComponent, {
         callback: this._parseRoute.bind(this)
       });
@@ -432,7 +436,8 @@ export default class Beatle {
       }
     } else {
       // #! 设置多个路由
-      this.setRoutes(path, true);
+      const isAssign = RouteComponent === undefined ? true : !!RouteComponent;
+      this.setRoutes(path, isAssign);
     }
   }
 

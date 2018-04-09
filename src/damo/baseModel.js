@@ -5,6 +5,7 @@
  */
 import Ajax from '../utils/ajax';
 import cloneDeep from 'lodash/cloneDeep';
+import isPlainObject from '../core/isPlainObject';
 import {getProcessor, getProcessorByExec, getProcessorByGenerator, setReducers} from '../seed/action';
 
 export default class BaseModel {
@@ -23,12 +24,7 @@ export default class BaseModel {
   }
 
   _wrapperReducer(name, reducer, action) {
-    if (typeof action.callback === 'function') {
-      reducer = action.callback || reducer;
-      return (nextStore, payload) => {
-        nextStore[name] = reducer(nextStore, payload, this._initialState[name], nextStore[name], action);
-      };
-    } else {
+    if (isPlainObject) {
       const map = {};
       for (let status in action.callback) {
         map[status] = (nextStore, payload) => {
@@ -36,6 +32,11 @@ export default class BaseModel {
         };
       }
       return map;
+    } else {
+      reducer = action.callback || reducer;
+      return (nextStore, payload) => {
+        nextStore[name] = reducer(nextStore, payload, this._initialState[name], nextStore[name], action);
+      };
     }
   }
 
