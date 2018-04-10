@@ -218,7 +218,7 @@ export default class Beatle {
     if (routeConfig.component instanceof Beatle) {
       const component = routeConfig.component;
       const self = this;
-      const basePath = routeConfig.path || routeConfig.name;;
+      const basePath = routeConfig.path || routeConfig.name;
       const newComponent = createReactClass({
         render() {
           return React.createElement(Provider, {
@@ -266,7 +266,7 @@ export default class Beatle {
     return this._setting.routes;
   }
 
-  setRoutes(routes, isAssign) {
+  setRoutes(routes, isAssign, parent) {
     if (Array.isArray(routes)) {
       // 路由配置为数组时，实际上是react-router的路由配置
       if (isAssign) {
@@ -274,12 +274,16 @@ export default class Beatle {
       }
       // 需要遍历所有路由配置，包括父级、子级，都映射到routesMap，方便后续查找
       routes.forEach((item) => {
+        item.parent = parent;
         if (isAssign === false) {
           this._pushRoute(this._setting.routes, item);
         }
+        if (item.component && item.component.routeOptions) {
+          Object.assign(item, item.component.routeOptions);
+        }
         this._setting.routesMap[this.getResolvePath(item)] = item;
         if (item.childRoutes) {
-          this.setRoutes(item.childRoutes);
+          this.setRoutes(item.childRoutes, null, item);
         }
       });
     } else {
