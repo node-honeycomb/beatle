@@ -3,7 +3,8 @@ import BaseModel from '../damo/baseModel';
 
 const modelShape = {
   displayName: propTypes.string,
-  store: propTypes.object.isRequired,
+  store: propTypes.object,
+  state: propTypes.object,
   actions: propTypes.object.isRequired,
   effects: propTypes.object,
   subscriptions: propTypes.object

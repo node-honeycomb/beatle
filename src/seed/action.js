@@ -7,7 +7,7 @@ import warning from 'fbjs/lib/warning';
 import BaseModel from '../damo/baseModel';
 
 export function setReducers(model, modelName, actionName, actionCfg, async) {
-  const callback = actionCfg.reducer || actionCfg.callback || noop;
+  const callback = typeof actionCfg === 'function' ? actionCfg : actionCfg.reducer || actionCfg.callback || noop;
   let type;
   if (typeof callback === 'function') {
     if (async) {
@@ -334,6 +334,10 @@ export function getProcessorByGenerator(model, initialState, modelName, actionNa
 export function getProcessor(model, initialState, modelName, actionName, func, getState) {
   return (...args) => {
     return (dispatch) => {
+      const payload =  {
+        arguments: args,
+        store: initialState
+      };
       if (typeof func === 'function') {
         const newDispatch = (action) => {
           if (action.type) {
@@ -351,31 +355,23 @@ export function getProcessor(model, initialState, modelName, actionName, func, g
           dispatch(action);
           return Promise.resolve(action.payload);
         };
-        const result = func.apply(model, args.concat({
+        Object(payload, {
           put: newDispatch,
           select: (name, deep) => {
             const modelState = getState();
             warning(!modelState.hasOwnProperty || modelState.hasOwnProperty(name), messages.mergeWarning, 'select', name, modelName, 'Beatle.ReduxSeed');
             return Promise.resolve(modelState[name] && modelState[name].asMutable({deep: deep}));
           }
-        }));
-        if (result instanceof Promise) {
-          return result;
-        } else {
-          return Promise.resolve(result);
-        }
-      } else {
-        // #! 同步action
-        dispatch({
-          type: encodeActionType(modelName, actionName),
-          payload: {
-            data: func && func.data,
-            arguments: args,
-            store: initialState
-          }
         });
-        return Promise.resolve(undefined);
+      } else {
+        payload.data = func && func.data;
       }
+      // #! 同步action
+      dispatch({
+        type: encodeActionType(modelName, actionName),
+        payload: payload
+      });
+      return Promise.resolve(undefined);
     };
   };
 }

@@ -210,10 +210,16 @@ function getDecorator(fn) {
 const docorators = {
   // decorator for connect
   connect: getDecorator((app, option, BaseComponent) => {
+    if (typeof app === 'string') {
+      app = Beatle.getApp(app);
+    }
     return app.connect(option.bindings, BaseComponent, option.flattern);
   }),
   // docorator for model
   model: getDecorator((app, option, Model) => {
+    if (typeof app === 'string') {
+      app = Beatle.getApp(app);
+    }
     return app.model(Model, option.Resource);
   }),
   // decorator for createModel
@@ -222,6 +228,9 @@ const docorators = {
   },
   // docorator for route
   route: getDecorator((app, option, BaseComponent) => {
+    if (typeof app === 'string') {
+      app = Beatle.getApp(app);
+    }
     if (option.routeOptions) {
       BaseComponent.routeOptions = Object.assign(BaseComponent.routeOptions || {}, option.routeOptions);
     }
@@ -229,10 +238,16 @@ const docorators = {
   }),
   // docorator for observable
   observable: getDecorator((app, option, BaseComponent) => {
+    if (typeof app === 'string') {
+      app = Beatle.getApp(app);
+    }
     return app.connect(option.data, BaseComponent);
   }),
   // decorator for view
   view: getDecorator((app, option, BaseComponent) => {
+    if (typeof app === 'string') {
+      app = Beatle.getApp(app);
+    }
     return app.view(option.selector, BaseComponent, option.providers);
   })
 };

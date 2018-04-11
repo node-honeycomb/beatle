@@ -131,7 +131,7 @@ export default class ReduxSeed {
           configurable: true
         });
       }
-      const store = Model.state || Model.store;
+      const store = Model.state = Model.state || Model.store || {};
       let initialState = this._isImmutable ? immutable(store) : store;
 
       redux.models[name] = Model;
@@ -141,6 +141,20 @@ export default class ReduxSeed {
         resource: Resource,
         initialState: initialState
       }, this);
+
+      if (!Model.getAction) {
+        Model.getAction = (name) => {
+          if (name) {
+            return (...args) => Model._actions[name].apply(Model, args)(this.getStore().dispatch);
+          } else {
+            const actions = {};
+            for (let key in Model._actions) {
+              actions[key] = (...args) => Model._actions[key].apply(Model, args)(this.getStore().dispatch);
+            }
+            return actions;
+          }
+        };
+      }
       redux.rootReducer[name] = modelToReducer(Model, initialState, this._isImmutable);
       return store;
     }
