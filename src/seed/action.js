@@ -334,11 +334,8 @@ export function getProcessorByGenerator(model, initialState, modelName, actionNa
 export function getProcessor(model, initialState, modelName, actionName, func, getState) {
   return (...args) => {
     return (dispatch) => {
-      const payload =  {
-        arguments: args,
-        store: initialState
-      };
-      if (typeof func === 'function') {
+      // 兼容之前副作用
+      if (typeof func === 'function' && func.toString().split(')')[0].split('(').pop().indexOf('put') > -1) {
         const newDispatch = (action) => {
           if (action.type) {
             const [modelName, name] = decodeActionType(action.type);
@@ -355,23 +352,31 @@ export function getProcessor(model, initialState, modelName, actionName, func, g
           dispatch(action);
           return Promise.resolve(action.payload);
         };
-        Object(payload, {
+        const result = func.apply(model, args.concat({
           put: newDispatch,
           select: (name, deep) => {
             const modelState = getState();
             warning(!modelState.hasOwnProperty || modelState.hasOwnProperty(name), messages.mergeWarning, 'select', name, modelName, 'Beatle.ReduxSeed');
             return Promise.resolve(modelState[name] && modelState[name].asMutable({deep: deep}));
           }
-        });
+        }));
+        if (result instanceof Promise) {
+          return result;
+        } else {
+          return Promise.resolve(result);
+        }
       } else {
-        payload.data = func && func.data;
+        // #! 同步action
+        dispatch({
+          type: encodeActionType(modelName, actionName),
+          payload: {
+            data: func && func.data,
+            arguments: args,
+            store: initialState
+          }
+        });
+        return Promise.resolve(undefined);
       }
-      // #! 同步action
-      dispatch({
-        type: encodeActionType(modelName, actionName),
-        payload: payload
-      });
-      return Promise.resolve(undefined);
     };
   };
 }
