@@ -22,10 +22,17 @@ export default class Saga {
   }
 
   _watch(type, resolve, reject) {
-    this._watchersMap[type] = {
-      resolve: this._wrapped.bind(this, type, resolve),
-      reject: this._wrapped.bind(this, type, reject),
-    };
+    this._watchersMap[type].resolve = this._wrapped.bind(this, type, resolve);
+    this._watchersMap[type].reject = this._wrapped.bind(this, type, reject);
+  }
+
+  _getWatchPromise(type) {
+    if (this._watchersMap[type]) {
+      return this._watchersMap[type].promise;
+    } else {
+      this._watchersMap[type] = {};
+      return this._watchersMap[type].promise = new Promise(this._watch.bind(this, type));      
+    }
   }
 
   getMiddleware(getModel) {
@@ -37,7 +44,7 @@ export default class Saga {
       const model = getModel(modelName);
       if (model && actionName && model.effects[actionName]) {
         // 得出resolve 和 reject交付给saga，不再往下走
-        return new Promise(this._watch.bind(this, action.type));
+        return this._getWatchPromise(action.type);
       } else {
         return next(action);
       }
@@ -89,6 +96,7 @@ export default class Saga {
           action.type = encodeActionType(model.displayName, action.type);
         }
       } else {
+        model._emitter.data = action;
         action = {
           type: model.ACTION_TYPE_IMMEDIATE,
           payload: action
@@ -126,21 +134,21 @@ export default class Saga {
       }
     }
 
+    const prefix = encodeActionType(model.displayName, actionName);
     const sagaWithCatch = function* (option) {
       try {
-        const args = option.arguments || [];
-        yield sagaEffects.put({type: encodeActionType(model.displayName, actionName, 'start')});
-        const result = yield action(...args.concat(model._emitter));
-        yield sagaEffects.put({type: encodeActionType(model.displayName, actionName, 'success')});
-        self.resolve(actionName, result);
+        const args = option.payload.arguments || [];
+        yield sagaEffects.put({type: encodeActionType(prefix, 'start')});
+        yield action(...args.concat(model._emitter));
+        yield sagaEffects.put({type: encodeActionType(prefix, 'success')});
+        self.resolve(prefix, model._emitter.data);
       } catch (e) {
-        yield sagaEffects.put({type: encodeActionType(model.displayName, actionName, 'error')});
-        self.reject(actionName, e);
+        yield sagaEffects.put({type: encodeActionType(prefix, 'error')});
+        self.reject(prefix, e);
         window.console.error(e);
       }
     };
 
-    const prefix = encodeActionType(model.displayName, actionName);
     const sgaWorkersMap = {
       // watcher: sagaWithCatch,
       takeEvery: function* () {

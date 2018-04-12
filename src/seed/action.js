@@ -248,7 +248,7 @@ export function getActions({
         if (isGenerator(actionCfg)) {
           model.effects[actionKey] = actionCfg;
 
-          actionCfg._processor = model._actions[actionKey] = getProcessorByGenerator(model, initialState, modelName, actionKey);
+          actionCfg._processor = model._actions[actionKey] = getProcessorByGenerator(model, initialState, modelName, actionKey, saga);
         } else {
           actionCfg._processor = model._actions[actionKey] = getProcessor(model, initialState, modelName, actionKey, actionCfg, () => seed.getStore().getState()[modelName]);
         }
@@ -318,15 +318,19 @@ export function getProcessorByExec(model, initialState, modelName, actionName, e
   };
 }
 
-export function getProcessorByGenerator(model, initialState, modelName, actionName) {
+export function getProcessorByGenerator(model, initialState, modelName, actionName, saga) {
   return (...args) => {
     return (dispatch) => {
+      const actionKey = typeToAction(modelName, actionName);
       dispatch({
-        action: typeToAction(modelName, actionName),
-        arguments: args,
-        store: initialState
+        action: actionKey,
+        payload: {
+          arguments: args,
+          store: initialState
+        }
       });
-      return Promise.resolve(undefined);
+      const type = encodeActionType(modelName, actionName);
+      return saga._getWatchPromise(type);
     };
   };
 }
@@ -335,7 +339,7 @@ export function getProcessor(model, initialState, modelName, actionName, func, g
   return (...args) => {
     return (dispatch) => {
       // 兼容之前副作用
-      if (typeof func === 'function' && func.toString().split(')')[0].split('(').pop().indexOf('put') > -1) {
+      if (typeof func === 'function' && func.toString().split(')')[0].split('(').pop().indexOf('payload') === -1) {
         const newDispatch = (action) => {
           if (action.type) {
             const [modelName, name] = decodeActionType(action.type);

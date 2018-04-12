@@ -21,7 +21,6 @@ import connect from './connect';
 import route from './route';
 import modelChecker from './model';
 import Ajax from '../utils/ajax';
-import autoLoadRequire from './auto/load';
 /**
  * ### 应用初始化依赖的配置项
  *
@@ -122,6 +121,7 @@ export default class Beatle {
     }
   }
 
+  static autoLoad = {};
   /**
    * ### 初始化依赖模块
    *
@@ -135,10 +135,10 @@ export default class Beatle {
     let Models;
     if (options.models) {
       Models = options.models;
-    } else if (options.autoLoadModel) {
+    } else if (options.autoLoadModel && Beatle.autoLoad.loadModels) {
       try {
         // #! 不能用require，因为查找不到编译就报错了，无法完整编译整个应用。
-        Models = autoLoadRequire.loadModels();
+        Models = Beatle.autoLoad.loadModels();
       } catch (x) {
         window.console.error(x);
       }
@@ -155,9 +155,9 @@ export default class Beatle {
     this.seed = new ReduxSeed({name: this._setting.appName, initialState: options.store, middlewares: middlewares, Models: Models, ajax: this.ajax});
 
     // #! 自动加载路由
-    if (options.autoLoadRoute) {
+    if (options.autoLoadRoute && Beatle.autoLoad.loadRoutes) {
       try {
-        this.routesFactory(autoLoadRequire.loadRoutes());
+        this.routesFactory(Beatle.autoLoad.loadRoutes());
       } catch (x) {
         window.console.error(x);
       }
@@ -658,12 +658,15 @@ export default class Beatle {
       dataBindings: typeof bindings[0] === 'function' ? bindings[0] : (state) => {
         const iState = {};
         bindings.forEach((binding) => {
-          if (typeof binding === 'string' && models[binding]) {
+          if (typeof binding === 'string') {
             let mState = {};
-            const store = models[binding].state || models[binding].store;
-            for (let key in store) {
-              mState[key] = state[binding][key];
+            if (models[binding]) {
+              const store = models[binding].state || models[binding].store;
+              for (let key in store) {
+                mState[key] = state[binding][key];
+              }
             }
+
             if (flattern) {
               Object.assign(iState, mState);
             } else {

@@ -56,7 +56,7 @@ app
 })
 /* eslint-disable no-unused-vars */
 class UserModel {
-  static displayName = 'user';
+  static displayName = 'user1';
   static store = {
     profile: {
       login: 'Guest'
@@ -128,12 +128,12 @@ class UserModel {
 })
 @connect({
   app: app,
-  bindings: ['user']
+  bindings: ['user1']
 })
 class Root extends Component {
   static propTypes = {
     dispatch: PropTypes.func,
-    user: PropTypes.object
+    user1: PropTypes.object
   }
 
   constructor(props) {
@@ -141,13 +141,15 @@ class Root extends Component {
   }
 
   componentWillMount() {
-    this.props.user.getUserAsync().then(res => {
-      window.window.console.log(res);
-    });
-    // this.props.user.getUser('test');
+    // this.props.user1.getUserAsync().then(res => {
+    //   window.window.console.log(res);
+    // });
+    this.props.user1.getUser('test');
     // this.props.dispatch({
-    //   action: 'user.getUser',
-    //   arguments: ['test']
+    //   action: 'user1.getUser',
+    //   payload: {
+    //     arguments: ['test']
+    //   }
     // });
   }
 
@@ -160,7 +162,7 @@ class Root extends Component {
           maxProgress={95}
           progressIncrease={10}
         />
-        <h1>Welcome back: {this.props.user.profile.login}</h1>
+        <h1>Welcome back: {this.props.user1.profile.login}</h1>
       </div>
     );
   }

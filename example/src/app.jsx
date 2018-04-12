@@ -1,4 +1,7 @@
+const mixinLoad = require('hc-honeypack-auto-module-plugin/addon');
 const Beatle = require('../../src');
+mixinLoad(Beatle.autoLoad);
+
 import TodoList from './scenes/todoList';
 
 import './app.less';

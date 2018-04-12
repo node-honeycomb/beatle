@@ -21,10 +21,11 @@ export default class BaseModel {
     this._ajax = option.ajax || new Ajax();
     this._isImmutable = option.isImmutable;
     this._defaultActions = option.actions;
+    this._saga = option.saga;
   }
 
   _wrapperReducer(name, reducer, action) {
-    if (isPlainObject) {
+    if (isPlainObject(reducer)) {
       const map = {};
       for (let status in action.callback) {
         map[status] = (nextStore, payload) => {
@@ -140,12 +141,17 @@ export default class BaseModel {
     if (!this._initialState) {
       this._initialState = cloneDeep(this.state);
     }
+    if (this._defaultActions[name] && this.state[name] === undefined) {
+      const _callback = action;
+      action = cloneDeep(this._defaultActions[name]);
+      action.callback = _callback || action.callback;
+    }
     let processor;
     if (action.exec) {
       processor = getProcessorByExec(this, this._initialState, this._name, name, action.exec, this._ajax);
       setReducers(this, this._name, name, action, true);
     } else if (action.isGenerator) {
-      processor = getProcessorByGenerator(this, this._initialState, this._name, name);
+      processor = getProcessorByGenerator(this, this._initialState, this._name, name, this._saga);
       setReducers(this, this._name, name, action);
     } else {
       processor = getProcessor(this, this._initialState, this._name, name, action, () => {

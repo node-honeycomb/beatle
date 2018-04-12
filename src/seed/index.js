@@ -120,7 +120,8 @@ export default class ReduxSeed {
           name: Model.displayName,
           ajax: this._ajax,
           actions: Model.actions,
-          isImmutable: this._isImmutable
+          isImmutable: this._isImmutable,
+          saga: this._saga
         });
         Model.actions = {};
         Object.defineProperty(Model, 'dispatch', {
