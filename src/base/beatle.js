@@ -331,12 +331,14 @@ export default class Beatle {
     let resolvePath;
     if (routeConfig.resolvePath) {
       resolvePath = routeConfig.resolvePath;
+    } else if (routeConfig.path && routeConfig.path[0] === '/') {
+      resolvePath = routeConfig.resolvePath = routeConfig.path;
     } else {
-      const paths = [routeConfig.path || routeConfig.name];
+      const paths = [routeConfig.name || routeConfig.path];
       let item = routeConfig;
       item = item.parent;
       while (item) {
-        paths.unshift(item.name);
+        paths.unshift(item.name || item.path);
         item = item.parent;
       }
       resolvePath = paths

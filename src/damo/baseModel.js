@@ -18,7 +18,7 @@ export default class BaseModel {
    */
   constructor(option = {}) {
     this._name = option.name;
-    this._ajax = option.ajax || new Ajax();
+    this.ajax = option.ajax || new Ajax();
     this._isImmutable = option.isImmutable;
     this._defaultActions = option.actions;
     this._saga = option.saga;
@@ -148,7 +148,7 @@ export default class BaseModel {
     }
     let processor;
     if (action.exec) {
-      processor = getProcessorByExec(this, this._initialState, this._name, name, action.exec, this._ajax);
+      processor = getProcessorByExec(this, this._initialState, this._name, name, action.exec, this.ajax);
       setReducers(this, this._name, name, action, true);
     } else if (action.isGenerator) {
       processor = getProcessorByGenerator(this, this._initialState, this._name, name, this._saga);

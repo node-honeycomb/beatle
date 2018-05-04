@@ -31,7 +31,7 @@ export default class Saga {
       return this._watchersMap[type].promise;
     } else {
       this._watchersMap[type] = {};
-      return this._watchersMap[type].promise = new Promise(this._watch.bind(this, type));      
+      return this._watchersMap[type].promise = new Promise(this._watch.bind(this, type));
     }
   }
 
