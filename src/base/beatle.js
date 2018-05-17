@@ -331,7 +331,7 @@ export default class Beatle {
     let resolvePath;
     if (routeConfig.resolvePath) {
       resolvePath = routeConfig.resolvePath;
-    } else if (routeConfig.path && routeConfig.path[0] === '/') {
+    } else if (routeConfig.path && (routeConfig.path[0] === '/' || routeConfig.path !== routeConfig.resolvePath)) {
       resolvePath = routeConfig.resolvePath = routeConfig.path;
     } else {
       const paths = [routeConfig.name || routeConfig.path];
