@@ -21,6 +21,19 @@ import connect from './connect';
 import route from './route';
 import modelChecker from './model';
 import Ajax from '../utils/ajax';
+
+class IProvider extends Provider {
+  getChildContext() {
+    return {
+      app: this.props.app,
+      store: this.store
+    };
+  }
+}
+
+IProvider.childContextTypes = Object.assign({
+  app: propTypes.object.isRequired
+}, Provider.childContextTypes);
 /**
  * ### 应用初始化依赖的配置项
  *
@@ -221,7 +234,8 @@ export default class Beatle {
       const basePath = routeConfig.path || routeConfig.name;
       const newComponent = createReactClass({
         render() {
-          return React.createElement(Provider, {
+          return React.createElement(IProvider, {
+            app: this,
             store: component.getStore()
           }, React.createElement(Router, {
             history: self._withBasename(basePath),
@@ -802,7 +816,8 @@ export default class Beatle {
     basePath = basePath || this._setting.basePath;
 
     this._setting.basePath = basePath;
-    ReactDOM.render(React.createElement(Provider, {
+    ReactDOM.render(React.createElement(IProvider, {
+      app: this,
       store: store
     }, React.createElement(Router, {
       history: this._withBasename(basePath),
