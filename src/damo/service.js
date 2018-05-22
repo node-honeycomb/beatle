@@ -50,16 +50,19 @@ export default function service(providers, Component, {injector, selector}) {
       if (selector) {
         // context也从当前组件同一个级别
         for (let name in selector.context) {
-          selector.context[name] = getService.call(this, name);
+          if (name === 'props') {
+            // 每次获取props都是最新的
+            Object.defineProperty(selector.context, 'props', {
+              get: () => {
+                return this.props;
+              },
+              enumerable: true,
+              configurable: true
+            });
+          } else {
+            selector.context[name] = getService.call(this, name);
+          }
         }
-        // 每次获取props都是最新的
-        Object.defineProperty(selector.context, 'props', {
-          get: () => {
-            return this.props;
-          },
-          enumerable: true,
-          configurable: true
-        });
 
         // 完成后触发钩子函数
         try {
