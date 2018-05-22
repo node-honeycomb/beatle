@@ -34,11 +34,25 @@ function getState(currentState, keys) {
 }
 
 const globalInjector = new Injector();
+const exec = (name, action) => (model, method, descriptor) => {
+  const callback = descriptor.initializer ? descriptor.initializer() : descriptor.value;
+  descriptor.initializer = undefined;
+  descriptor.value = function (...args) {
+    return this.setState({
+      [name]: {
+        exec: action || method,
+        callback: callback
+      }
+    }, ...args);
+  };
+  return descriptor;
+};
+
 
 export default function enhanceBeatle(Beatle) {
   return class Damo extends Beatle {
     static crud = crud;
-
+    static exec = exec;
     static BaseModel = BaseModel;
     static BaseSelector = BaseSelector;
     static Injector = Injector;

@@ -6,7 +6,7 @@ export default function service(providers, Component, {injector, selector}) {
   // + 获取HOC包装的组件的实例 > see:
   // https://github.com/RubaXa/Sortable/issues/713#issuecomment-169668921
   function getParantService(name) {
-    return this._reactInternalInstance._context[name];
+    return this._reactInternalInstance ? this._reactInternalInstance._context[name] : null;
   }
   // 优先级为：providers -> context -> parentContext -> globalService
   function getService(name) {

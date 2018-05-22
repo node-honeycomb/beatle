@@ -534,7 +534,7 @@ export default class Beatle {
 
         // #! 路径短于指定级别时都认为一级路由处理
         if (keys.length < leave) {
-          childRoute = route(null, Comp, {
+          childRoute = route(keys[0] || SEP, Comp, {
             name: keys[0] || SEP,
             strict: option.strict,
             callback: routeCallback,
@@ -567,7 +567,7 @@ export default class Beatle {
 
           if (parentRoute) {
             parentRoute.childRoutes = parentRoute.childRoutes || [];
-            childRoute = route(null, Comp, {
+            childRoute = route(parentRoute.path === navKey ? null : navKey + '/' + name, Comp, {
               name: name,
               navKey: navKey,
               strict: option.strict,
