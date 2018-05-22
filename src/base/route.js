@@ -14,7 +14,7 @@ function mergeRouteOptions(routeConfig) {
 export default function route(path, RouteComponent, option = {}) {
   const routeConfig = Object.assign({
     resolvePath: path,
-    path: path || (option.navKey ? option.navKey + '/' + option.name : option.name),
+    path: path,
     name: option.name,
     navKey: option.navKey,
     component: RouteComponent,

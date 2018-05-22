@@ -276,7 +276,7 @@ export default class Beatle {
       routes.forEach((item) => {
         item.parent = parent;
         if (isAssign === false) {
-          this._pushRoute(this._setting.routes, item);
+          this._pushRoute(this._setting.routes, item, parent);
         }
         if (item.component && item.component.routeOptions) {
           Object.assign(item, item.component.routeOptions);
@@ -329,32 +329,41 @@ export default class Beatle {
       }
     }
     let resolvePath;
+    /**
+     * 3种情况，目的是要把路由路径打平
+     * 1. route有resolvPath，说明已经处理过了
+     * 2. route有path, 并且是绝对地址，此时resolvePath应为path
+     * 3. route有path，如果有parent怎直接去path值，否则需要和navKey进行拼接
+     */
     if (routeConfig.resolvePath) {
       resolvePath = routeConfig.resolvePath;
-    } else if (routeConfig.path && (routeConfig.path[0] === '/' || routeConfig.path !== routeConfig.resolvePath)) {
+    } else if (routeConfig.path && (routeConfig.path[0] === '/' || routeConfig.path.indexOf('http') === 0)) {
       resolvePath = routeConfig.resolvePath = routeConfig.path;
     } else {
-      const paths = [routeConfig.name || routeConfig.path];
       let item = routeConfig;
-      item = item.parent;
+      let paths = [];
+      let ppath;
       while (item) {
-        paths.unshift(item.name || item.path);
+        ppath = item.path || item.name;
+        if (item.parent) {
+          paths.unshift(ppath);
+        } else {
+          paths.unshift(item.navKey ? item.navKey + '/' + ppath : ppath);
+        }
         item = item.parent;
       }
-      resolvePath = paths
-        .join(SEP)
-        .replace(/\/+/g, SEP);
+      resolvePath = paths.join(SEP).replace(/\/+/g, SEP);
       routeConfig.resolvePath = resolvePath;
     }
     return resolvePath;
   }
 
-  _pushRoute(routes, childRoute) {
+  _pushRoute(routes, childRoute, parent) {
     routes.push(childRoute);
     if (childRoute.aliasRoutes) {
       childRoute.aliasRoutes.forEach(r => {
         const path = r.path;
-        r = Object.assign({}, childRoute, r);
+        r = Object.assign({parent: parent}, childRoute, r);
         delete r.resolvePath;
         if (!path) {
           r.path = this._parsePath(r.path, r.name);
