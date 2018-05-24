@@ -548,7 +548,7 @@ export default class Beatle {
           name = keys.pop();
           children = routes;
           let parentRoute;
-          let navKey = keys[keys.length - 1];
+          let navKey = keys[keys.length - 1] || '';
           // #! 查找是否注册过父级路由
           if (keys.length) {
             // 当前路由路径来决定应该在哪个子路由下
