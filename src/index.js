@@ -248,7 +248,7 @@ const docorators = {
     if (typeof app === 'string') {
       app = Beatle.getApp(app);
     }
-    return app.view(option.selector, BaseComponent, option.providers);
+    return app.view(option.selector, BaseComponent, option.providers, option.bindings, option.hookActions);
   })
 };
 

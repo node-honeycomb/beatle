@@ -66,6 +66,23 @@ export default function service(providers, Component, {injector, selector}) {
 
         // 完成后触发钩子函数
         try {
+          if (selector.hookActions) {
+            selector.hookActions.forEach(action => {
+              let model;
+              if (typeof action === 'string') {
+                model = selector.getModel(selector.bindings[0]);
+                const name = action;
+                action = {
+                  name: name
+                };
+              } else {
+                model = typeof action.model === 'string' ? selector.getModel(action.model) : action.model;
+              }
+              if (model && model[action.name]) {
+                model[action.name](action.getParams ? action.getParams(this.props) : action.params);
+              }
+            });
+          }
           selector.initialize && selector.initialize(this.props);
         } catch (e) {
           window.console.error(e);

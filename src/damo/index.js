@@ -139,18 +139,20 @@ export default function enhanceBeatle(Beatle) {
       }
     }
 
-    view(selector, SceneComponent, providers) {
+    view(selector, SceneComponent, providers, bindings, hookActions) {
       // #! selector实例
-      if (selector.prototype instanceof BaseSelector) {
+      if (selector && selector.prototype instanceof BaseSelector) {
         selector.displayName = selector.displayName || guid('selector');
         selector = this.injector.instantiate(selector, selector.displayName);
-        if (selector.bindings) {
-          Object.assign(selector, this.toBindings(selector.bindings));
-        }
+        selector.bindings = selector.bindings || bindings;
+        selector.hookActions = selector.hookActions || hookActions;
       } else {
         selector = new BaseSelector();
-
-        Object.assign(selector, this.toBindings([].concat[selector]));
+        selector.bindings = [].concat(bindings || selector || '');
+        selector.hookActions = hookActions;
+      }
+      if (selector.bindings) {
+        Object.assign(selector, this.toBindings(selector.bindings));
       }
       // #! 绑定组件, 连接到redux
       SceneComponent = connect(selector, this.dispatch.bind(this))(SceneComponent);
