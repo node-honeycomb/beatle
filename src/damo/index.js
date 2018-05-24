@@ -34,13 +34,16 @@ function getState(currentState, keys) {
 }
 
 const globalInjector = new Injector();
-const exec = (name, action) => (model, method, descriptor) => {
+const exec = (name, feedback) => (model, method, descriptor) => {
   const callback = descriptor.initializer ? descriptor.initializer() : descriptor.value;
   descriptor.initializer = undefined;
   descriptor.value = function (...args) {
+    if (feedback) {
+      args.push(feedback);
+    }
     return this.setState({
       [name]: {
-        exec: action || method,
+        exec: method,
         callback: callback
       }
     }, ...args);
