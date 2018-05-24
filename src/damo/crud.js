@@ -43,15 +43,19 @@ function append(currentState, state, action, byMerge) {
     } else {
       if (Array.isArray(state)) {
         state.forEach(d => {
-          currentState.unshift(d);
           if (query) {
+            currentState.unshift(d);
             updateQuery(query, 1);
+          } else {
+            currentState.push(d);
           }
         });
       } else {
-        currentState.unshift(state);
         if (query) {
+          currentState.unshift(state);
           updateQuery(query, 1);
+        } else {
+          currentState.push(state);
         }
       }
     }
