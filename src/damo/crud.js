@@ -95,8 +95,10 @@ export default {
   },
   create: (nextState, payload, initialState, currentState, action) => {
     const state = getState(payload, action.processData);
-
     if (state) {
+      if (parseInt(payload.data, 10)) {
+        state[action.cid || 'id'] = payload.data;
+      }
       return append(currentState, state, action);
     } else {
       return currentState;
