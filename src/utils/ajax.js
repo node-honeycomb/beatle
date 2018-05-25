@@ -336,6 +336,8 @@ export default class Ajax {
       xhr = fetch(ajaxOptions.url, ajaxOptions).then((response) => {
         const beforeResponse = this.set('beforeResponse');
         return beforeResponse(response, ajaxOptions, xhr);
+      }).catch(err => {
+        callback && callback(err, null, xhr);
       });
     }
     const callback = ajaxOptions.callback;
