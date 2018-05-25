@@ -65,7 +65,7 @@ const beatleShape = {
   autoLoadRoute: propTypes.bool,
   models: propTypes.oneOfType([propTypes.object, propTypes.func, propTypes.array]),
   routes: propTypes.oneOfType([propTypes.object, propTypes.func, propTypes.array]),
-  routeType: propTypes.string
+  routeType: propTypes.oneOfType([propTypes.object, propTypes.string])
 };
 const SEP = '/';
 
@@ -86,7 +86,7 @@ export default class Beatle {
       rootDom: options.root || document.body,
       routes: [],
       routesMap: {},
-      history: options.routeType === 'hashHistory' ? hashHistory : browserHistory
+      history: Object(options.routeType) === options.routeType ? options.routeType : (options.routeType === 'hashHistory' ? hashHistory : browserHistory)
     };
     this._middlewares = [];
     this.seed = null;
