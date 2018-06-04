@@ -74,6 +74,7 @@ export default class Beatle {
   static fireCallbacks = {};
   static defaultApp = null;
   static instances = {};
+  static IProvider = IProvider;
 
   constructor(options = {}) {
     propTypes.checkPropTypes(beatleShape, options, 'BeatleOptions', 'Beatle');
@@ -800,13 +801,14 @@ export default class Beatle {
    *  app.run(document.body, 'example');
    * ```
    */
-  run(rootDom, basePath) {
+  run(rootDom, basePath, renderCb) {
     if (this._hasRendered) {
       return;
     }
     this._hasRendered = true;
 
     if (typeof rootDom === 'string') {
+      renderCb = basePath;
       basePath = rootDom;
       rootDom = null;
     }
@@ -816,12 +818,17 @@ export default class Beatle {
     basePath = basePath || this._setting.basePath;
 
     this._setting.basePath = basePath;
-    ReactDOM.render(React.createElement(IProvider, {
+    const appElement = React.createElement(IProvider, {
       app: this,
       store: store
     }, React.createElement(Router, {
       history: this._withBasename(basePath),
       routes: routes
-    })), rootDom);
+    }));
+    if (renderCb) {
+      renderCb(appElement, rootDom);
+    } else {
+      ReactDOM.render(appElement, rootDom);
+    }
   }
 }

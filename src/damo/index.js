@@ -61,7 +61,7 @@ export default function enhanceBeatle(Beatle) {
     static Injector = Injector;
     static AsyncComponent = AsyncComponent;
 
-    constructor(opt) {
+    constructor(opt = {}) {
       opt.injector = new Injector(opt && opt.providers);
       super(opt);
     }
