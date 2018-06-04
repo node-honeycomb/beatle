@@ -1,6 +1,6 @@
-# BeatlePro &middot; [![GitLab license](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/facebook/react/blob/master/LICENSE)
+# Beatle &middot; [![GitLab license](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/facebook/react/blob/master/LICENSE)
 
-BeatlePro是一套轻量级前端框架，借助React、Redux实现应用界面构建流程。
+Beatle是一套轻量级前端框架，借助React、Redux实现应用界面构建流程。
 
 ## 特性
 
@@ -20,18 +20,18 @@ BeatlePro是一套轻量级前端框架，借助React、Redux实现应用界面�
   honeypack build -c webpack.build.js
 ```
 
-# BeatlePro-API
+# Beatle-API
 
-## Class: BeatlePro
+## Class: Beatle
 
-+ BeatlePro支持多应用场景，每个应用都需要通过New BeatlePro来生成实例。
++ Beatle支持多应用场景，每个应用都需要通过New Beatle来生成实例。
 
 ```javascript
-  const app = new BeatlePro(options);
+  const app = new Beatle(options);
   app.run(options);
 ```
 
-以下出现的 `app` 皆为 `BeatlePro` 的实例, 在初始化传入的配置`options`:
+以下出现的 `app` 皆为 `Beatle` 的实例, 在初始化传入的配置`options`:
 
  | 属性 | 描述 | 默认 |
  |:------ |:------ |:------ |
@@ -51,8 +51,8 @@ BeatlePro是一套轻量级前端框架，借助React、Redux实现应用界面�
 
 应用实例`app`有相应的方法来完成应用构建，包括`注册数据模型`, `注册路由`, `应用启动`等。
 
-### BeatlePro.getApp(appName)
-* return <`BeatlePro`> 返回指定的BeatlePro实例
+### Beatle.getApp(appName)
+* return <`Beatle`> 返回指定的Beatle实例
 
 多应用场景下通过选择指定应用实例，从而完成单个应用的构建。
 
@@ -63,14 +63,14 @@ BeatlePro是一套轻量级前端框架，借助React、Redux实现应用界面�
     }
   }
   // 创建应用A，输出Hello World A!
-  const appA = new BeatlePro({
+  const appA = new Beatle({
     name: 'appA',
     ...
   });
   appA.route('/', Root, {query: {appName: 'A'}});
   appA.run();
   // 应用B，处处Hello Wolrd B!
-  const appB = new BeatlePro({
+  const appB = new Beatle({
     name: 'appB',
     ...
   });
@@ -78,24 +78,24 @@ BeatlePro是一套轻量级前端框架，借助React、Redux实现应用界面�
   appB.run();
 
   // 通过指定应用名来获取应用A实例
-  BeatlePro.getApp('appA');
+  Beatle.getApp('appA');
 ```
 
-### BeatlePro.createModel(model, resource)
+### Beatle.createModel(model, resource)
 * model <[Model](#model)> 需要组合的数据模型
 * resource <[Resource](#resource)> 组合需要的接口封装对象
 * return <[Model](#model)> 返回组合好的Model
 
-在BeatlePro中`数据模型Model`是指一类数据的集合，一个数据模型包含了`数据基础结构`, `改变数据的行为方法` 以及`跨数据模型的监听`。
+在Beatle中`数据模型Model`是指一类数据的集合，一个数据模型包含了`数据基础结构`, `改变数据的行为方法` 以及`跨数据模型的监听`。
 
 resource是接口调用的封装对象，一般来说，我们会愿意把接口单独定义到业务逻辑之外的对象中。
 
-* 来了解一下在BeatlePro中应用Model
+* 来了解一下在Beatle中应用Model
 
 ```javascript
   // 1. 定义一个数据模型
   const model = {
-    // 定义数据模型实例名（注意，以下通过实例名来获取到BeatlePro生成的model的实例
+    // 定义数据模型实例名（注意，以下通过实例名来获取到Beatle生成的model的实例
     displayName: 'test',
     // 定义数据结构
     state: {
@@ -111,8 +111,8 @@ resource是接口调用的封装对象，一般来说，我们会愿意把接口
       }
     }
   }
-  // 2. 初始化BeatlePro应用
-  const app = new BeatlePro({name: 'main'});
+  // 2. 初始化Beatle应用
+  const app = new Beatle({name: 'main'});
   // 3. 注册model
   app.model(model);
   // 获取model实例
@@ -130,7 +130,7 @@ resource是接口调用的封装对象，一般来说，我们会愿意把接口
     }
   }
   // 5. 把组件和数据模型进行绑定
-  const ConnectRoot = BeatlePro.connect(['test'], Root);
+  const ConnectRoot = Beatle.connect(['test'], Root);
   // 路由响应时，组件输出 component props value :2
   app.route('/', ConnectRoot);
   // 调用行为，写入数据
@@ -145,7 +145,7 @@ resource是接口调用的封装对象，一般来说，我们会愿意把接口
 
 ```javascript
 // 1. 定义一个数据模型
-  class Model extends BeatlePro.BaseModel {
+  class Model extends Beatle.BaseModel {
     static displayName: 'test';
     state = {
       value: 1
@@ -189,7 +189,7 @@ resource是接口调用的封装对象，一般来说，我们会愿意把接口
     }
   }
   // 2. 通过class创建
-  class Model extends BeatlePro.BaseModel {
+  class Model extends Beatle.BaseModel {
     static displayName: 'test';
     state = {
       value: 1
@@ -219,7 +219,7 @@ resource是接口调用的封装对象，一般来说，我们会愿意把接口
 * 数据模型的异步行为通过接口获取数据
 
 ```javascript
-  class Model extends BeatlePro.BaseModel {
+  class Model extends Beatle.BaseModel {
     static displayName: 'test';
     state = {
       value: 1
@@ -227,7 +227,7 @@ resource是接口调用的封装对象，一般来说，我们会愿意把接口
     set(v) {
       return this.setState({
         value: {
-          // !!注意，此处exec只是接口的配置，这是BeatlePro支持的一种特殊的exec形式，其内部会通过fetch来触发调用
+          // !!注意，此处exec只是接口的配置，这是Beatle支持的一种特殊的exec形式，其内部会通过fetch来触发调用
           exec: {
             url: 'http://api.github.com', 
             method: 'get', 
@@ -258,9 +258,9 @@ resource是接口调用的封装对象，一般来说，我们会愿意把接口
     }
   }
 
-  // 以下是装饰器用法，也可以通过 Model = BeatlePro.createMode(resource)(Model);
-  @BeatlePro.createMode(resource)
-  class Model extends BeatlePro.BaseModel {
+  // 以下是装饰器用法，也可以通过 Model = Beatle.createMode(resource)(Model);
+  @Beatle.createMode(resource)
+  class Model extends Beatle.BaseModel {
     static displayName: 'test';
     state = {
       value: 1
@@ -291,20 +291,20 @@ resource是接口调用的封装对象，一般来说，我们会愿意把接口
 
 > Model的使用下面API有更详细介绍
 
-### BeatlePro的其他静态属性
+### Beatle的其他静态属性
 
 | 属性 | 描述 |
 |:------ |:------ |
 | [Ajax](#class-ajax) | 接口调用Ajax类，可单独初始化ajax实例 |
 | [Poller](#class-poller) | 轮询调用Poller类 |
 | [Link](#class-link) | 封装了`react-router`的Link, 带上全局base和query |
-| [ReduxSeed](#class-reduxseed) | 数据驱动机制可单独使用，不依赖BeatlePro，包含完整的数据模型以及Redux处理一整套机制 |
+| [ReduxSeed](#class-reduxseed) | 数据驱动机制可单独使用，不依赖Beatle，包含完整的数据模型以及Redux处理一整套机制 |
 
-下面我们来看下BeatlePro实例`app`有哪些方法和对象可以使用。
+下面我们来看下Beatle实例`app`有哪些方法和对象可以使用。
 
 ### app.ajax
 
-`app`是有`new BeatlePro`初始化的实例，在初始化同时时，内部还会初始化2个实例：`ajax` 和 `seed`, 分别为[Ajax](#class-ajax)的实例 和 [ReduxSeed](#class-reduxseed)的实例。
+`app`是有`new Beatle`初始化的实例，在初始化同时时，内部还会初始化2个实例：`ajax` 和 `seed`, 分别为[Ajax](#class-ajax)的实例 和 [ReduxSeed](#class-reduxseed)的实例。
 
 ajax可以设置实例级别的事件监听，分别通过以下方法来设置
 
@@ -317,7 +317,7 @@ ajax可以设置实例级别的事件监听，分别通过以下方法来设置
 | set(name[, value]) | name `String`, value `any` | 前4个方法都可以通过set方法来设置，简化操作 |
 
 ```javascript
-  const app = new BeatlePro();
+  const app = new Beatle();
 
   // 在请求之前，监听事件处理
   app.ajax.beforeRequest(
@@ -379,24 +379,24 @@ seed实例是[ReduxSeed](#class-reduxseed)实例，`app.getStore()`实际上是�
 | view(Selector, component, providers) | Selector `Object`, component: `ReactComponent`, providers: `Array<Object|Function|Array>` | 设置视图，并注入context |
 | run([rootDom, basePath]) | rootDom `Object`, basePath `String` | 启动应用 |
 
-> 当app为BeatlePro的主应用时，可以通过BeatlePro.xxx直接调用app对应的方法。
-> 所有app实例的开放api都可以通过BeatlePro进行访问
+> 当app为Beatle的主应用时，可以通过Beatle.xxx直接调用app对应的方法。
+> 所有app实例的开放api都可以通过Beatle进行访问
 
 ```javascript
-  const mainApp = new BeatlePro({});
-  const subApp = new BeatlePro({subApp: true});
+  const mainApp = new Beatle({});
+  const subApp = new Beatle({subApp: true});
 
-  // BeatlePro.run 等同于mainApp.run, 相同的还有`use`, `model`等
+  // Beatle.run 等同于mainApp.run, 相同的还有`use`, `model`等
 ```
-> 在new BeatlePro的配置项[options](#class-beatlePro)中有subApp属性来声明是否为子应用，否则就是主应用。
-> 在BeatlePro支持多应用的场景下，主应用必须只为一个，其他均为子应用，否则将会出现预想不到的问题。
+> 在new Beatle的配置项[options](#class-beatle)中有subApp属性来声明是否为子应用，否则就是主应用。
+> 在Beatle支持多应用的场景下，主应用必须只为一个，其他均为子应用，否则将会出现预想不到的问题。
 
 ### app.getStore()
 
-在new BeatlePro产生实例`app`时，应用内部会创建一个单一的数据共享对象，后面统一称之为`状态容器store`, 如果你熟悉`Redux`，当前`store`也可以在`Redux`技术体系下正常工作。
+在new Beatle产生实例`app`时，应用内部会创建一个单一的数据共享对象，后面统一称之为`状态容器store`, 如果你熟悉`Redux`，当前`store`也可以在`Redux`技术体系下正常工作。
 
 ```javascript
-  const app = new BeatlePro();
+  const app = new Beatle();
 
   const store = app.getStore();
   store.substribe(function () {
@@ -428,9 +428,9 @@ seed实例是[ReduxSeed](#class-reduxseed)实例，`app.getStore()`实际上是�
 
 ```javascript
   import React from 'react';
-  import BeatlePro from 'beatlePro';
+  import Beatle from 'beatle';
 
-  const app = new BeatlePro();
+  const app = new Beatle();
 
   const Model = {
     displayName: 'user',
@@ -468,7 +468,7 @@ seed实例是[ReduxSeed](#class-reduxseed)实例，`app.getStore()`实际上是�
 * isGlobal <`Boolean`> 是否是全局的（跨所有应用）
 
 ```javascript
-  const app = new BeatlePro({name: 'main'});
+  const app = new Beatle({name: 'main'});
   function A() {
     return {
       v: 1
@@ -550,7 +550,7 @@ ReactDOM.render( => (<div>Hi, {app.observable(promise).render(d => d.name)}</div
 * return <`ReactComponent`> 返回新的React组件
 
 ```javascript
-  class UserModel extends BeatlePro.BaseModel {
+  class UserModel extends Beatle.BaseModel {
     state = {
       profile: {
         name: 'Guest'
@@ -561,7 +561,7 @@ ReactDOM.render( => (<div>Hi, {app.observable(promise).render(d => d.name)}</div
         profile: {
           exec: fetch('https://api.github.com/users/' + name),
           // 每次都需要写callback，而很多callback的处理基本都是统一的，比如接口的CRUD的处理。
-          // 以下等同于BeatleProp.crud.get
+          // 以下等同于Beatlep.crud.get
           callback: (nextProps, payload) => {
             return payload.data;
           }
@@ -570,7 +570,7 @@ ReactDOM.render( => (<div>Hi, {app.observable(promise).render(d => d.name)}</div
     }
   }
 
-  class Selector extends BeatleProp.BaseSelector{
+  class Selector extends Beatlep.BaseSelector{
     // inputs相当于connect的 stateMergeToProps, 相对应的outputs等同于connect的 actionMergeToProps
     get inputs() {
       return (state, dispatch) => {
@@ -599,8 +599,8 @@ ReactDOM.render( => (<div>Hi, {app.observable(promise).render(d => d.name)}</div
       return (<div>{this.context.test.title} {this.props.profile.login}!</div>)
     }
   }
-  // 和BeatleProp.connect不同，connect绑定数据模型，view绑定数据选择器
-  Root = BeatleProp.view(Selector, Root, {
+  // 和Beatlep.connect不同，connect绑定数据模型，view绑定数据选择器
+  Root = Beatlep.view(Selector, Root, {
     test: function() {
       return {
         title: 'Hello'
@@ -611,12 +611,12 @@ ReactDOM.render( => (<div>Hi, {app.observable(promise).render(d => d.name)}</div
 
 > 数据选择器是一个新的概念，在复杂的场景，一个组件往往会调用多个model，通过数据选择器来统一管理model，提高代码可读性
 
-* BeatleProp.crud
+* Beatlep.crud
 
 这是action数据处理的模板，以上的UserModel通过crud重新处理如下:
 
 ```javascript
-  class UserModel extends BeatlePro.BaseModel {
+  class UserModel extends Beatle.BaseModel {
     state = {
       profile: {
         name: 'Guest'
@@ -626,7 +626,7 @@ ReactDOM.render( => (<div>Hi, {app.observable(promise).render(d => d.name)}</div
       return this.setState({
         profile: {
           exec: fetch('https://api.github.com/users/' + name),
-          callback: BeatleProp.crud.get
+          callback: Beatlep.crud.get
         }
       })
     }
@@ -718,8 +718,8 @@ crud的全部接口
 
 
 ### app.route([path, routes])
-* path <`String`>, 当存在path时，则是配置单个路由，此时routes应该为React组件或者BeatlePro子应用。
-* routes <`ReactComponent|BeatlePro|ReactRouter`>, 不存在path时基于ReactRouter的路由的配置.
+* path <`String`>, 当存在path时，则是配置单个路由，此时routes应该为React组件或者Beatle子应用。
+* routes <`ReactComponent|Beatle|ReactRouter`>, 不存在path时基于ReactRouter的路由的配置.
 
 + app.route(routes)
 
@@ -761,7 +761,7 @@ crud的全部接口
 把子应用挂在主父级应用下，子应用的路由会继承下来，但需要追加根路径来访问。
 
 ```javascript
-  const subApp = new BeatlePro({subApp: true});
+  const subApp = new Beatle({subApp: true});
   subApp.route('/', subAppRootComponent);
   subApp.route('/profile', subAppProfileComponent);
   app.route('/subApp', subApp);
@@ -775,13 +775,13 @@ crud的全部接口
 * base <`string`>, app访问的路由，统一加上跟路由路径.
 
 ```javascript
-  const app = new BeatlePro();
+  const app = new Beatle();
   app.route('/', RootComponent);
   app.route('/profile', ProfileComponent);
-  app.run(document.body, '/beatlePro');
+  app.run(document.body, '/beatle');
   // 此时访问/不能匹配任何路由
-  // 访问/beatlePro/ 会触达RootComponent视图
-  // 访问/beatlePro/profile 会触达ProfileComponent视图
+  // 访问/beatle/ 会触达RootComponent视图
+  // 访问/beatle/profile 会触达ProfileComponent视图
 ```
 
 ## Model
@@ -824,13 +824,13 @@ Model数据模型是一类数据的集合，包含了数据的初始化结构，
 
 符合以上数据结构的Model可以通过`app.model(Model)`注册到应用中。
 
-> 何时使用`BeatlePro.createModel(model, resource)`, 当你异步的action中exec需要单独维护到model外部时，通过Bealte.createModel组合进来，生成最终的Model
+> 何时使用`Beatle.createModel(model, resource)`, 当你异步的action中exec需要单独维护到model外部时，通过Bealte.createModel组合进来，生成最终的Model
 
 ### Model行为action的配置
 
 | **属性** | **参数类型** | **描述** |
 | :--- | :--- | :--- |
-| exec | `Object/Function` | 异步行为的触发条件，BeatlePro内部通过exec来识别异步行为，当exec为接口配置，会转为一个接口调用函数，如果是函数则不用做变动 |
+| exec | `Object/Function` | 异步行为的触发条件，Beatle内部通过exec来识别异步行为，当exec为接口配置，会转为一个接口调用函数，如果是函数则不用做变动 |
 | callback | `Object/Function` | 行为触发成功后进入，在同步行为时，callback只能为函数，异步行为时callback一般来说是对象，有3个回调函数，`start`, `success` 和 `error` |
 | reducer | `Object/Function` | 同上callback |
 | subscriptions | `Object` | 跨数据模型监听行为，从而变更自身数据 |
@@ -913,17 +913,17 @@ Model数据模型是一类数据的集合，包含了数据的初始化结构，
       }
     }
   }
-  // 你会发现，UserResource存在相同行为名称的属性，值为接口调用配置。通过BeatlePro.createModel会组装到UserModel中
-  app.model(BeatlePro.createModel(UserModel, UserResource));
+  // 你会发现，UserResource存在相同行为名称的属性，值为接口调用配置。通过Beatle.createModel会组装到UserModel中
+  app.model(Beatle.createModel(UserModel, UserResource));
   app.model(AccountModel);
   // 当UserModel的login行为触发调用，成功后，AccountModel的监听也会被触发，从而更新AccountModel的数据
 ```
 
 ## Resource
 
-Resource是接口配置对象，结合BeatlePro.createModel来使用
+Resource是接口配置对象，结合Beatle.createModel来使用
 
-+ `BeatlePro.createModel(model, resource)`时其内部将做如下处理
++ `Beatle.createModel(model, resource)`时其内部将做如下处理
  1. 遍历resource对象，拿到每个属性和值
  2. 在model.actions中找到对应属性的行为，把值赋给行为的exec对象，找不到行为则，则丢弃掉
 
@@ -955,7 +955,7 @@ const userResource = {
 };
 
 // getUserList不会生成行为，只有login会组合到login行为中
-BeatlePro.createModel(userModel, userResource);
+Beatle.createModel(userModel, userResource);
 ```
 
 ## Class: ReduxSeed
@@ -963,7 +963,7 @@ BeatlePro.createModel(userModel, userResource);
 + 通过new ReduxSeed产生seed实例
 
 ```javascript
-  import {ReduxSeed} from 'beatlePro';
+  import {ReduxSeed} from 'beatle';
 
   const seed = new ReduxSeed({...});
 ```
@@ -981,14 +981,14 @@ BeatlePro.createModel(userModel, userResource);
 
 | 名称 | 参数类型 | 描述 |
 | :------ | :------ | :------ |
-| createModel | model `Object`, resource `Object` | 组合resource到model中，等同于BeatlePro.createModel |
+| createModel | model `Object`, resource `Object` | 组合resource到model中，等同于Beatle.createModel |
 | getRedux | name `String` | 获取指定的seed实例 
 
 ### seed实例方法
 
 | 名称 | 参数类型 | 描述 |
 | :------ | :------ | :------ |
-| reducerBuilder | model `Object`, resource `Object` | 组合resource到model中，等同于BeatlePro.createModel |
+| reducerBuilder | model `Object`, resource `Object` | 组合resource到model中，等同于Beatle.createModel |
 | register | model `Object`, resource `Object` | 注册一个model到seed实例 |
 | getActions | modelName `String` | 获取指定的seed实例下的model的行为，为空时获取所有行为 |
 
@@ -1009,7 +1009,7 @@ BeatlePro.createModel(userModel, userResource);
 + Ajax的全局配置分为2种：全局（所有实例有效） 和 实例级，支持的值如上
 
 ```javascript
-  import {Ajax} from 'BeatlePro';
+  import {Ajax} from 'Beatle';
   Ajax.headers = {
     csrfToken: '...'
   }
@@ -1092,11 +1092,11 @@ Ajax静态方法，其内部会初始化一个ajax实例，并调用ajax.request
 | catchError `Function` | 轮询中每个动作调用失败时都会进入到错误回调 | N/A |
 
 ```javascript
-  import BeatlePro, {Poller} from 'beatlePro';
+  import Beatle, {Poller} from 'beatle';
   const poller = new Pooler({
     action: () => {
       // 每个5秒会轮询调用改函数
-      return BeatlePro.Ajax.request({url: '', method: 'get'});
+      return Beatle.Ajax.request({url: '', method: 'get'});
     }
   });
   // 当subscribe订阅或者start方法调用时，轮询开始工作。
@@ -1122,7 +1122,7 @@ Ajax静态方法，其内部会初始化一个ajax实例，并调用ajax.request
 是React组件，封装了React Router中Link组件。用法同Link组件一致，所做的事情就是当app实例中设置了路由的统一前缀以及全局的query参数, 通过Link跳转时会自动带上。
 
 ```javascript
-  const app = new BeatlePro({
+  const app = new Beatle({
     base: '/example',     // 设置了路由前缀
     query: {debug: true}  // 设置了全局的query
   });
