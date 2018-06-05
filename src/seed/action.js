@@ -306,7 +306,7 @@ export function getProcessorByExec(model, initialState, modelName, actionName, e
         }
 
         // #! is promise
-        if (result instanceof Promise) {
+        if (result && result.then) {
           result.then(successCallback, errorCallback);
         } else {
           successCallback(result);
@@ -364,7 +364,7 @@ export function getProcessor(model, initialState, modelName, actionName, func, g
             return Promise.resolve(modelState[name] && modelState[name].asMutable({deep: deep}));
           }
         }));
-        if (result instanceof Promise) {
+        if (result && result.then) {
           return result;
         } else {
           return Promise.resolve(result);

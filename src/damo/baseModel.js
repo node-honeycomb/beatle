@@ -59,7 +59,7 @@ export default class BaseModel {
             callback: this._wrapperReducer(key, getData, nextState[key])
           };
           break;
-        case nextState[key] instanceof Promise:
+        case !!(nextState[key] && nextState[key].then):
           nextState[key] = {
             exec: nextState[key],
             callback: this._wrapperReducer(key, getData, nextState[key])
