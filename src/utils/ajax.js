@@ -1,7 +1,7 @@
 import fetch from 'isomorphic-fetch';
 import propTypes from 'prop-types';
 import warning from 'fbjs/lib/warning';
-
+import qs from 'qs';
 import ajaxShape from './ajaxShape';
 import Poller from './poller';
 import substitute from '../core/substitute';
@@ -190,7 +190,9 @@ export default class Ajax {
       // 合并ajaxOptions.data到query，重复的key被data中的值替换
       u.query = Object.assign(u.query || {}, ajaxOptions.data);
       // 去除search属性，在format函数中，如果存在search，那么query解析为queryStr不被接收
-      delete u.search;
+      const query = qs.stringify(u.query);
+      u.search = (query && ('?' + query)) || '';
+      delete u.query;
     }
     // 得到最后的url
     return urllib.format(u);

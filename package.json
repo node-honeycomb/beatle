@@ -1,6 +1,6 @@
 {
   "name": "beatle",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "main": "./dist/core/beatle.js",
   "author": "dtboost <dtboost@aliyun.com>",
   "description": "Beatle是一套完整前端开发框架，用来构建客户端应用。",
@@ -19,6 +19,7 @@
     "prop-types": "15.6.0",
     "querystring": "0.2.0",
     "url": "0.11.0",
+    "qs": "6.5.2",
     "react-redux": "4.4.8",
     "react-router": "2.6.1",
     "react-router-redux": "4.0.8",
