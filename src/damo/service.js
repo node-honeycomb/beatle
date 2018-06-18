@@ -2,7 +2,7 @@ import PropTypes from 'prop-types';
 import warning from 'fbjs/lib/warning';
 import logMessages from '../core/messages';
 
-export default function service(providers, Component, {injector, selector}) {
+export default function service(providers, Component, {injector, globalInjector, selector}) {
   // + 获取HOC包装的组件的实例 > see:
   // https://github.com/RubaXa/Sortable/issues/713#issuecomment-169668921
   function getParantService(name) {
@@ -11,21 +11,22 @@ export default function service(providers, Component, {injector, selector}) {
   // 优先级为：providers -> context -> parentContext -> globalService
   function getService(name) {
     const service = this._services && this._services[name] || this.context[name];
-    return service || getParantService.call(this, name) || injector.getService(name);
+    return service || getParantService.call(this, name) || injector.getService(name) || globalInjector.getService(name);
   }
 
   class NewComponent extends Component {
     constructor(props, context) {
       super(props, context);
-      const services = this._services = {
-        selector: selector
-      };
-
+      const services = this._services = {};
       NewComponent.childContextTypes = NewComponent.childContextTypes || {};
-      NewComponent.childContextTypes.selector = PropTypes.object;
+      if (selector) {
+        services.selector = selector;
+        NewComponent.childContextTypes.selector = PropTypes.object;
+      }
+
       if (Array.isArray(providers)) {
         providers.forEach(Provider => {
-          warning(Provider.displayName, logMessages.displayName, 'contructor', 'service', 'Beatle-pro');
+          warning(Provider.displayName, logMessages.displayName, 'contructor', 'service', 'Beatle');
           NewComponent.childContextTypes[Provider.displayName] = PropTypes.object;
           services[Provider.displayName] = injector.instantiate(Provider, Provider.displayName, getService.bind(this));
         });

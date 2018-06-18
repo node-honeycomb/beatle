@@ -35,7 +35,7 @@ const vendors = [
   'bluebird',
   'querystring',
   'url',
-  'rxjs'
+  /rxjs\/*/
 ];
 
 var webpackOpts = {

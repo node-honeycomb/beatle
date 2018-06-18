@@ -20,7 +20,7 @@ export default class BaseModel {
     this._name = option.name;
     this.ajax = option.ajax || new Ajax();
     this._isImmutable = option.isImmutable;
-    this._defaultActions = option.actions;
+    this._defaultActions = option.actions || {};
     this._saga = option.saga;
   }
 
@@ -56,13 +56,13 @@ export default class BaseModel {
         case nextState[key] !== undefined && nextState[key].asMutable:
           nextState[key] = {
             data: this._isImmutable ? nextState[key] : nextState[key].asMutable({deep: true}),
-            callback: this._wrapperReducer(key, getData, nextState[key])
+            callback: this._wrapperReducer(key, getData, {})
           };
           break;
         case !!(nextState[key] && nextState[key].then):
           nextState[key] = {
             exec: nextState[key],
-            callback: this._wrapperReducer(key, getData, nextState[key])
+            callback: this._wrapperReducer(key, getData, {})
           };
           break;
         default:
@@ -94,7 +94,7 @@ export default class BaseModel {
           } else {
             nextState[key] = {
               data: nextState[key],
-              callback: this._wrapperReducer(key, getData, nextState[key])
+              callback: this._wrapperReducer(key, getData, {})
             };
           }
           break;

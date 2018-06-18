@@ -152,13 +152,13 @@ export default class Injector {
       this.setServices(Service);
     } else {
       if (isPlainObject(Service)) {
-        this.setServices(Object.keys(key => Service[key]));
+        this.setServices(Object.keys(Service).map(key => Service[key]));
       } else {
         const name = Service.displayName;
         if (name) {
           this._services[name] = this.instantiate(Service, name);
         } else {
-          warning(false, logMessages.displayName, 'setService', 'injector', 'Beatle-pro');
+          warning(false, logMessages.displayName, 'setService', 'injector', 'Beatle');
         }
       }
     }

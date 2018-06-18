@@ -10,7 +10,6 @@ const vendors = [
   'react-dom',
   'react-redux',
   'react-router',
-  'redux-router',
   'react-router-redux',
   'redux-logger',
   'redux-thunk',
@@ -20,7 +19,6 @@ const vendors = [
   'create-react-class',
   'cuid',
   'redux',
-  'redux-saga',
   'redux-promise-middleware',
   'react-redux-loading-bar',
   'hoist-non-react-statics',
@@ -29,14 +27,18 @@ const vendors = [
   'async-validator',
   'isomorphic-fetch',
   'events',
-  'lodash',
   'moment',
   'querystring',
   'url',
   'bluebird',
-  'rxjs',
-  '../../../../auto_models',
-  '../../../../auto_routes'
+  'qs',
+  'warning',
+  /rxjs\/*/,
+  /history\/*/,
+  /lodash\/*/,
+  /fbjs\/*/,
+  /react-router\/*/,
+  /redux-saga\/*/
 ];
 
 var webpackOpts = {

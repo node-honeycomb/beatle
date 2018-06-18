@@ -12,6 +12,7 @@ import configureStore from './store';
 import extractModules from '../core/extractModules';
 import Saga from './saga';
 import BaseModel from '../damo/baseModel';
+import reducerImmediate from './reducerImmediate';
 
 const reduxShape = {
   ajax: propTypes.object,
@@ -77,6 +78,7 @@ export default class ReduxSeed {
     this._ajax = options.ajax;
     this._saga = new Saga();
     this._isImmutable = options.initialState === undefined || immutable.isImmutable(options.initialState);
+    this._pureReducers = [];
     this._init(this._instanceName);
     const initialState = this._isImmutable && options.initialState ? options.initialState.asMutable({deep: true}) : options.initialState;
     this._initStore(initialState, options.middlewares.concat(this._saga.getMiddleware(this.getModel.bind(this))), options.Models);
@@ -98,7 +100,8 @@ export default class ReduxSeed {
     }
   }
 
-  _initStore(initialState, middlewares, Models) {
+  _initStore(initialState = {}, middlewares, Models) {
+    initialState['__pure_reducer__'] = {};
     configureStore(initialState, middlewares, () => {
       return this.reducerBuilder(Models);
     }, (store) => {
@@ -164,6 +167,15 @@ export default class ReduxSeed {
   get(name) {
     return ReduxSeed.getRedux(this._instanceName)[name];
   }
+
+  dispatch(action) {
+    const redux = ReduxSeed.getRedux(this._instanceName);
+    if(Object(action) === action && !action.type) {
+      action.type = '__pure_reducer__';
+    }
+    return redux.store.dispatch(action);
+  }
+  
   /**
    * ### ReduxSeed的实例方法
    *
@@ -179,7 +191,22 @@ export default class ReduxSeed {
     for (let name in Models) {
       this._setModel(redux, name, Models[name]);
     }
-
+    redux.rootReducer['__pure_reducer__'] = (nextStore = {}, action) => {
+      if(this._pureReducers.length) {
+        const newStore = {};
+        this._pureReducers.forEach(obj => {
+          if (obj.name) {
+            if (obj.name === action.name) {
+              Object.assign(newStore, obj.reducer(nextStore, action.payload));
+            }
+          } else {
+            Object.assign(newStore, obj.reducer(nextStore, action.payload));
+          }
+        });
+        return reducerImmediate(nextStore, newStore, '');
+      }
+      return nextStore;
+    };
     return combineReducers(redux.rootReducer);
   }
 
@@ -192,24 +219,35 @@ export default class ReduxSeed {
   }
 
   register(Model, Resource) {
-    const name = Model.displayName;
     const redux = ReduxSeed.getRedux(this._instanceName);
-
-    const initialState = this._setModel(redux, name, Model, Resource);
-
-    if (initialState) {
-      const rootReducer = combineReducers(redux.rootReducer);
-      redux
-        .store
-        .replaceReducer(rootReducer);
-      const effects = this._saga.effect(name);
-      if (effects) {
-        redux.store.runSaga(effects);
+    if(typeof Model === 'object' || Model.prototype instanceof BaseModel) {
+      const name = Model.displayName;
+      const initialState = this._setModel(redux, name, Model, Resource);
+      if (initialState) {
+        const rootReducer = combineReducers(redux.rootReducer);
+        redux
+          .store
+          .replaceReducer(rootReducer);
+        const effects = this._saga.effect(name);
+        if (effects) {
+          redux.store.runSaga(effects);
+        }
+        const allState = redux
+          .store
+          .getState();
+        allState[name] = initialState;
       }
-      const allState = redux
-        .store
-        .getState();
-      allState[name] = initialState;
+    } else {
+      if (typeof Model === 'function') {
+        this._pureReducers.push({
+          reducer: Model
+        });
+      } else if(typeof Model === 'string' && typeof Resource === 'function') {
+        this._pureReducers.push({
+          name: Model,
+          reducer: Resource
+        });
+      }
     }
   }
 

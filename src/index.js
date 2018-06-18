@@ -253,6 +253,7 @@ const docorators = {
 };
 
 const BeatlePro = enhancleBeatle(Beatle);
+BeatlePro.prototype.version = '1.0.4';
 module.exports = BeatlePro;
 
 export default BeatlePro;

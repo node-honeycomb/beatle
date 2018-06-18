@@ -5,6 +5,7 @@ import isGenerator from './isGenerator';
 import messages from '../core/messages';
 import warning from 'fbjs/lib/warning';
 import BaseModel from '../damo/baseModel';
+import reducerImmediate from './reducerImmediate';
 
 export function setReducers(model, modelName, actionName, actionCfg, async) {
   const callback = typeof actionCfg === 'function' ? actionCfg : actionCfg.reducer || actionCfg.callback || noop;
@@ -47,18 +48,7 @@ export function getActions({
 
   model.ACTION_TYPE_IMMEDIATE = encodeActionType(modelName, '@@UPDATE_STATE');
   model._reducers = model._reducers || {
-    [model.ACTION_TYPE_IMMEDIATE]: (nextStore, state) => {
-      // #! state = payload, 这是特殊处理
-      const attrs = [];
-      for (let key in state) {
-        if (nextStore.hasOwnProperty && !nextStore.hasOwnProperty(key)) {
-          attrs.push(key);
-        }
-        nextStore[key] = state[key];
-      }
-      warning(!attrs.length, messages.mergeWarning, 'update', attrs.join(','), modelName, 'Beatle.ReduxSeed');
-      return nextStore;
-    }
+    [model.ACTION_TYPE_IMMEDIATE]: (nextStore, action) => reducerImmediate(nextStore, action, modelName)
   };
   /**
    * ### 数据模型内的副作用

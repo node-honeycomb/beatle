@@ -1,11 +1,12 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import Rx from 'rxjs';
+import {from} from 'rxjs/observable/from';
+import {map} from 'rxjs/operators';
 
 function mergeToRender(ob) {
   Object.assign(ob, {
     render(callback) {
-      ob = ob.map(callback);
+      ob = ob.pipe(map(callback));
       return (<AsyncComponent observable={ob} />);
     }
   });
@@ -24,7 +25,7 @@ export default class AsyncComponent extends React.PureComponent {
   }
   // #! 把数据转成observable
   static observable = function (ob) {
-    return mergeToRender(Rx.Observable.from(ob));
+    return mergeToRender(from(ob));
   }
 
   state = {

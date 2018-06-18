@@ -1,5 +1,9 @@
 import {EventEmitter} from 'events';
+import {fromEvent} from 'rxjs/observable/fromEvent';
 import {Observable} from 'rxjs/Observable';
+import {of} from 'rxjs/observable/of';
+import {from} from 'rxjs/observable/from';
+import {expand, delay, takeWhile, catchError} from 'rxjs/operators';
 
 import Poller from '../utils/poller';
 
@@ -69,8 +73,7 @@ export default class BaseSelector extends EventEmitter {
         }
         this.emit(emitevent, ...arguments);
       };
-      emitter.stream = Observable
-        .fromEvent(this, emitevent);
+      emitter.stream = fromEvent(this, emitevent);
     } else {
       emitter.remove();
     }
@@ -78,13 +81,15 @@ export default class BaseSelector extends EventEmitter {
   }
 
   _subscribe(eventObj) {
-    let stream = eventObj.source.catch(err => {
-      this.emit(eventObj.eventName, err);
-      // > see:
-      // https://www.bennadel.com/blog/3046-experimenting-with-the-catch-operator-and-
-      // s tream-continuation-in-rxjs-and-angular-2.htm
-      return stream;
-    });
+    let stream = eventObj.source.pipe(
+      catchError(err => {
+        this.emit(eventObj.eventName, err);
+        // > see:
+        // https://www.bennadel.com/blog/3046-experimenting-with-the-catch-operator-and-
+        // s tream-continuation-in-rxjs-and-angular-2.htm
+        return stream;
+      })
+    );
 
     eventObj.subscription = stream.subscribe((...args) => {
       this.emit(eventObj.eventName, null, ...args);
@@ -112,25 +117,23 @@ export default class BaseSelector extends EventEmitter {
     // poller.start => promise
     let promise = option.action(option.start);
 
-    const source = Observable
-      .from(promise)
-      .expand((res) => {
+    const source = from(promise).pipe(
+      expand((res) => {
         promise = option.action(res);
         if (promise !== false) {
           if (promise instanceof Observable) {
             return promise;
           } else {
             // #! 数据必须是对象或者promise
-            return Observable
-              .from(promise)
-              .delay(option.delay);
+            return from(promise).pipe(delay(option.delay));
           }
         } else {
-          return Observable
-            .of(option.end);
+          return of(option.end);
         }
       })
-      .takeWhile(res => option.hasTick(res));
+    ).pipe(
+      takeWhile(res => option.hasTick(res))
+    );
     // #! 标记有轮询
     source.polling = true;
     return source;
@@ -193,7 +196,7 @@ export default class BaseSelector extends EventEmitter {
     // https://www.learnrxjs.io/operators/multicasting/cache.html
     let source = getSource(emitter.stream);
     if (source) {
-      emitter.source = source.cache(1);
+      // emitter.source = source.cache(1);
       this._subscribe(emitter);
     }
 

@@ -9,7 +9,7 @@ import service from './service';
 import BaseSelector from './baseSelector';
 import BaseModel from './baseModel';
 import {EventEmitter} from 'events';
-import {Observable} from 'rxjs/Observable';
+import {fromEvent} from 'rxjs/observable/fromEvent';
 import crud from './crud';
 
 const emitter = new EventEmitter();
@@ -27,7 +27,7 @@ function getState(currentState, keys) {
       state = state[keys[i]];
     }
   } catch (e) {
-    warning(false, logMessages.selectError, 'select', keys.join('.'), 'damo', 'Beatle-pro');
+    warning(false, logMessages.selectError, 'select', keys.join('.'), 'damo', 'Beatle');
     window.console.error(e);
   }
   return state;
@@ -63,6 +63,7 @@ export default function enhanceBeatle(Beatle) {
 
     constructor(opt = {}) {
       opt.injector = new Injector(opt && opt.providers);
+      opt.globalInjector = globalInjector;
       super(opt);
     }
 
@@ -91,16 +92,11 @@ export default function enhanceBeatle(Beatle) {
     }
 
     observable(originData) {
-      return AsyncComponent.observable(originData);
-    }
-
-    select(keyStr, isObservable) {
-      const store = this.seed.get('store');
-      const currentstate = store.getState();
-      const keys = keyStr.split('.');
-      const state = getState(currentstate, keys);
-      if (isObservable) {
+      if (typeof originData === 'string' && originData.indexOf('.') > -1) {
         // #! 这里有问题，要通过store.subscribe来实现
+        const store = this.seed.get('store');
+        const state = this.select(originData);
+        const keys = originData.split('.');
         const eventName = guid('event');
         store.subscribe(() => {
           const _state = getState(store.getState(), keys);
@@ -108,38 +104,60 @@ export default function enhanceBeatle(Beatle) {
             emitter.emit(eventName, _state.asMutable ? _state.asMutable({deep: true}) : _state);
           }
         });
-        return this.observable(Observable.fromEvent(emitter, eventName));
-      } else {
-        return state;
+        originData = fromEvent(emitter, eventName);
       }
+      return AsyncComponent.observable(originData);
+    }
+
+    select(keyStr) {
+      const store = this.seed.get('store');
+      const currentstate = store.getState();
+      const keys = keyStr.split('.');
+      const state = getState(currentstate, keys);
+      return state;
     }
 
     service(providers, isGlobal) {
-      const injector = isGlobal ? globalInjector : this.injector;
-      // #! 获取指定服务
+      let injector;
+
       if (typeof providers === 'string') {
-        return injector.getService(providers);
-      } else {
-        if (!isPlainObject(providers)) {
-          providers = [].concat(providers || []);
-        }
-        // #! 否则注入到全局服务中
-        if (Array.isArray(providers)) {
-          this
-            .injector
-            .setServices(providers);
+        if (typeof isGlobal === 'function') {
+          isGlobal.displayName = providers;
+          providers = isGlobal;
+          isGlobal = arguments[2];
         } else {
-          this
-            .injector
-            .setServices(Object.keys(providers).map(key => {
-              providers[key].displayName = providers[key].displayName || key;
-              return providers[key];
-            }));
+          // #! 获取指定服务
+          injector = isGlobal ? globalInjector : this.injector;
+          return injector.getService(providers);
         }
+      }
+      injector = isGlobal ? globalInjector : this.injector;
+      if (!isPlainObject(providers)) {
+        providers = [].concat(providers || []);
+      }
+      // #! 否则注入到全局服务中
+      if (Array.isArray(providers)) {
+        this
+          .injector
+          .setServices(providers);
+      } else {
+        this
+          .injector
+          .setServices(Object.keys(providers).map(key => {
+            providers[key].displayName = providers[key].displayName || key;
+            return providers[key];
+          }));
       }
     }
 
     view(selector, SceneComponent, providers, bindings, hookActions) {
+      if (selector && selector.prototype && selector.prototype.isReactComponent) {
+        hookActions = bindings;
+        bindings = providers;
+        providers = SceneComponent;
+        SceneComponent = selector;
+        selector = null;
+      }
       // #! selector实例
       if (selector && selector.prototype instanceof BaseSelector) {
         selector.displayName = selector.displayName || guid('selector');
@@ -164,6 +182,7 @@ export default function enhanceBeatle(Beatle) {
 
       return service(providers, SceneComponent, {
         injector: this.injector,
+        globalInjector: globalInjector,
         selector: selector
       });
     }

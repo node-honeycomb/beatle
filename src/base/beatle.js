@@ -6,13 +6,13 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 import propTypes from 'prop-types';
-import {Provider} from 'react-redux';
 import {Router, browserHistory, hashHistory} from 'react-router';
 import useBasename from 'history/lib/useBasename';
+import createMemoryHistory from 'history/lib/createMemoryHistory';
+import createRouterHistory from 'react-router/lib/createRouterHistory';
 import _get from 'lodash/get';
 import warning from 'fbjs/lib/warning';
 import messages from '../core/messages';
-import createReactClass from 'create-react-class';
 
 import isPlainObject from '../core/isPlainObject';
 import extractModules from '../core/extractModules';
@@ -20,20 +20,9 @@ import ReduxSeed from '../seed';
 import connect from './connect';
 import route from './route';
 import modelChecker from './model';
+import getProvider from './provider';
 import Ajax from '../utils/ajax';
 
-class IProvider extends Provider {
-  getChildContext() {
-    return {
-      app: this.props.app,
-      store: this.store
-    };
-  }
-}
-
-IProvider.childContextTypes = Object.assign({
-  app: propTypes.object.isRequired
-}, Provider.childContextTypes);
 /**
  * ### 应用初始化依赖的配置项
  *
@@ -54,7 +43,7 @@ IProvider.childContextTypes = Object.assign({
  * | subApp `Boolean` | 是否为子应用 | `false` |
  */
 const beatleShape = {
-  name: propTypes.string.isRequired,
+  name: propTypes.string,
   store: propTypes.object,
   middlewares: propTypes.array,
   ajax: propTypes.object,
@@ -68,13 +57,16 @@ const beatleShape = {
   routeType: propTypes.oneOfType([propTypes.object, propTypes.string])
 };
 const SEP = '/';
-
+const historys = {
+  localHistory: createRouterHistory(createMemoryHistory),
+  hashHistory: hashHistory,
+  browserHistory: browserHistory
+};
 export default class Beatle {
   // #! 静态属性不对外开放，包括未初始化时的函数列表、默认应用实例、所有实例。
   static fireCallbacks = {};
   static defaultApp = null;
   static instances = {};
-  static IProvider = IProvider;
 
   constructor(options = {}) {
     propTypes.checkPropTypes(beatleShape, options, 'BeatleOptions', 'Beatle');
@@ -87,13 +79,14 @@ export default class Beatle {
       rootDom: options.root || document.body,
       routes: [],
       routesMap: {},
-      history: Object(options.routeType) === options.routeType ? options.routeType : (options.routeType === 'hashHistory' ? hashHistory : browserHistory)
+      history: Object(options.routeType) === options.routeType ? options.routeType : historys[options.routeType] || historys.browserHistory
     };
     this._middlewares = [];
     this.seed = null;
     this.ajax = null;
     this._hasRendered = false;
     this.injector = options.injector;
+    this.globalInjector = options.globalInjector;
 
     Beatle.instances[this._setting.appName] = this;
     if (!options.subApp) {
@@ -179,6 +172,12 @@ export default class Beatle {
     if (options.routes) {
       this.setRoutes(options.routes, false);
     }
+
+    Object.assign(this.injector._services, {
+      ajax: this.ajax,
+      app: this,
+      seed: this.seed
+    });
   }
 
   /**
@@ -233,17 +232,18 @@ export default class Beatle {
       const component = routeConfig.component;
       const self = this;
       const basePath = routeConfig.path || routeConfig.name;
-      const newComponent = createReactClass({
+      const baseName = basePath[0] === '/' ? basePath : self._setting.basePath + SEP + basePath;
+      const IProvider = getProvider(this.injector, this.globalInjector);
+      class newComponent extends React.PureComponent {
         render() {
           return React.createElement(IProvider, {
-            app: this,
             store: component.getStore()
           }, React.createElement(Router, {
-            history: self._withBasename(basePath),
+            history: self._withBasename(baseName),
             routes: component._setting.routes
           }));
         }
-      });
+      }
       newComponent.routeOptions = component.routeOptions || {};
       routeConfig.component = newComponent;
       routeConfig.path = basePath + '(/**)';
@@ -599,8 +599,14 @@ export default class Beatle {
 
   model(Model, Resource) {
     // #! 返回指定model
-    if (arguments.length === 1 && typeof Model === 'string') {
-      return this.seed.getModel(Model);
+    if (typeof Model === 'string') {
+      if (arguments.length === 1) {
+        return this.seed.getModel(Model);
+      } else {
+        Resource.displayName = Model;
+        Model = Resource;
+        Resource = null;
+      }
     }
     if (Model) {
       Model = Beatle.fromLazy(Model, this);
@@ -672,6 +678,15 @@ export default class Beatle {
      *  }, Component)
      * ```
      */
+    if (models.prototype && models.prototype.isReactComponent) {
+      SceneComponent = models;
+      if (SceneComponent.bindings) {
+        models = (store, props) => SceneComponent.bindings(store['__pure_reducer__'], props);
+        flattern = true;
+      } else {
+        models = [];
+      }
+    }
     return connect(this.toBindings([].concat(models), flattern), this.dispatch.bind(this))(SceneComponent);
   }
 
@@ -818,13 +833,23 @@ export default class Beatle {
     basePath = basePath || this._setting.basePath;
 
     this._setting.basePath = basePath;
-    const appElement = React.createElement(IProvider, {
-      app: this,
-      store: store
-    }, React.createElement(Router, {
-      history: this._withBasename(basePath),
-      routes: routes
-    }));
+    let appElement;
+    const IProvider = getProvider(this.injector, this.globalInjector);
+    if (basePath.prototype && basePath.prototype.isReactComponent) {
+      appElement = React.createElement(IProvider, {
+        store: store
+      }, React.createElement(basePath, {
+        history: this._withBasename(basePath),
+        routes: routes
+      }));
+    } else {
+      appElement = React.createElement(IProvider, {
+        store: store
+      }, React.createElement(Router, {
+        history: this._withBasename(basePath),
+        routes: routes
+      }));
+    }
     if (renderCb) {
       renderCb(appElement, rootDom);
     } else {
