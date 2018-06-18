@@ -170,12 +170,12 @@ export default class ReduxSeed {
 
   dispatch(action) {
     const redux = ReduxSeed.getRedux(this._instanceName);
-    if(Object(action) === action && !action.type) {
+    if (Object(action) === action && !action.type) {
       action.type = '__pure_reducer__';
     }
     return redux.store.dispatch(action);
   }
-  
+
   /**
    * ### ReduxSeed的实例方法
    *
@@ -192,7 +192,7 @@ export default class ReduxSeed {
       this._setModel(redux, name, Models[name]);
     }
     redux.rootReducer['__pure_reducer__'] = (nextStore = {}, action) => {
-      if(this._pureReducers.length) {
+      if (this._pureReducers.length) {
         const newStore = {};
         this._pureReducers.forEach(obj => {
           if (obj.name) {
@@ -220,7 +220,7 @@ export default class ReduxSeed {
 
   register(Model, Resource) {
     const redux = ReduxSeed.getRedux(this._instanceName);
-    if(typeof Model === 'object' || Model.prototype instanceof BaseModel) {
+    if (typeof Model === 'object' || Model.prototype instanceof BaseModel) {
       const name = Model.displayName;
       const initialState = this._setModel(redux, name, Model, Resource);
       if (initialState) {
@@ -242,7 +242,7 @@ export default class ReduxSeed {
         this._pureReducers.push({
           reducer: Model
         });
-      } else if(typeof Model === 'string' && typeof Resource === 'function') {
+      } else if (typeof Model === 'string' && typeof Resource === 'function') {
         this._pureReducers.push({
           name: Model,
           reducer: Resource

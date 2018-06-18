@@ -233,13 +233,43 @@ export default class Beatle {
       const self = this;
       const basePath = routeConfig.path || routeConfig.name;
       const baseName = basePath[0] === '/' ? basePath : self._setting.basePath + SEP + basePath;
-      const IProvider = getProvider(this.injector, this.globalInjector);
+      const IProvider = getProvider(component.injector, component.globalInjector);
+      let history = component._setting.history;
+      let key;
+      let _routeCfg;
+      // 相同路由下增加路径
+      if (self._setting.history === history) {
+        component._setting.basePath = ''; // this._setting.basePath;
+        for (key in component._setting.routesMap) {
+          _routeCfg = component._setting.routesMap[key];
+          // delete _routeCfg.resolvePath;
+          if (_routeCfg.path && _routeCfg.path.indexOf('http') !== 0) {
+            if (_routeCfg.path === SEP) {
+              _routeCfg.path = basePath;
+              _routeCfg.resolvePath = baseName;
+            } else {
+              if (_routeCfg.path[0] === SEP) {
+                _routeCfg.path = basePath + _routeCfg.path;
+                _routeCfg.resolvePath = baseName + _routeCfg.resolvePath;
+                if (_routeCfg.path[0] !== SEP) {
+                  _routeCfg.path = SEP + _routeCfg.path;
+                }
+              } else {
+                _routeCfg.path = baseName + SEP + _routeCfg.path;
+                _routeCfg.resolvePath = baseName + SEP + _routeCfg.resolvePath;
+              }
+            }
+          }
+        }
+      } else {
+        history = component._withBasename(baseName);
+      }
       class newComponent extends React.PureComponent {
         render() {
           return React.createElement(IProvider, {
             store: component.getStore()
           }, React.createElement(Router, {
-            history: self._withBasename(baseName),
+            history: history,
             routes: component._setting.routes
           }));
         }
@@ -252,7 +282,7 @@ export default class Beatle {
     }
 
     if (routeConfig) {
-      this._setting.routesMap[this.getResolvePath(routeConfig)] = routeConfig;
+      this._setting.routesMap[this.getResolvePath(routeConfig, true)] = routeConfig;
     }
     return routeConfig;
   }
@@ -296,7 +326,7 @@ export default class Beatle {
         if (item.component && item.component.routeOptions) {
           Object.assign(item, item.component.routeOptions);
         }
-        this._setting.routesMap[this.getResolvePath(item)] = item;
+        this._setting.routesMap[this.getResolvePath(item, true)] = item;
         if (item.childRoutes) {
           this.setRoutes(item.childRoutes, null, item);
         }
@@ -331,46 +361,55 @@ export default class Beatle {
       .push(middleware);
   }
 
-  getResolvePath(routeConfig) {
+  getResolvePath(routeConfig, flag) {
+    let resolvePath;
     if (typeof routeConfig === 'string') {
-      if (routeConfig[0] === SEP) {
-        return routeConfig;
+      resolvePath = routeConfig;
+    } else {
+      /**
+       * 3种情况，目的是要把路由路径打平
+       * 1. route有resolvPath，说明已经处理过了
+       * 2. route有path, 并且是绝对地址，此时resolvePath应为path
+       * 3. route有path，如果有parent怎直接去path值，否则需要和navKey进行拼接
+       */
+      if (routeConfig.resolvePath) {
+        resolvePath = routeConfig.resolvePath;
+      } else if (routeConfig.path && (routeConfig.path[0] === '/' || routeConfig.path.indexOf('http') === 0)) {
+        resolvePath = routeConfig.resolvePath = routeConfig.path;
+      } else {
+        let item = routeConfig;
+        let paths = [];
+        let ppath;
+        while (item) {
+          ppath = item.path || item.name;
+          if (item.parent) {
+            paths.unshift(ppath);
+          } else {
+            paths.unshift(item.navKey ? item.navKey + '/' + ppath : ppath);
+          }
+          item = item.parent;
+        }
+        resolvePath = paths.join(SEP).replace(/\/+/g, SEP);
+        routeConfig.resolvePath = resolvePath;
+      }
+    }
+    if (flag) {
+      return resolvePath;
+    } else {
+      if (resolvePath.indexOf('http') === 0) {
+        return resolvePath;
       } else {
         if (this._setting.basePath) {
-          return this._setting.basePath + SEP + routeConfig;
+          if (resolvePath[0] === SEP) {
+            return this._setting.basePath + resolvePath;
+          } else {
+            return this._setting.basePath + SEP + resolvePath;
+          }
         } else {
-          return routeConfig;
+          return resolvePath;
         }
       }
     }
-    let resolvePath;
-    /**
-     * 3种情况，目的是要把路由路径打平
-     * 1. route有resolvPath，说明已经处理过了
-     * 2. route有path, 并且是绝对地址，此时resolvePath应为path
-     * 3. route有path，如果有parent怎直接去path值，否则需要和navKey进行拼接
-     */
-    if (routeConfig.resolvePath) {
-      resolvePath = routeConfig.resolvePath;
-    } else if (routeConfig.path && (routeConfig.path[0] === '/' || routeConfig.path.indexOf('http') === 0)) {
-      resolvePath = routeConfig.resolvePath = routeConfig.path;
-    } else {
-      let item = routeConfig;
-      let paths = [];
-      let ppath;
-      while (item) {
-        ppath = item.path || item.name;
-        if (item.parent) {
-          paths.unshift(ppath);
-        } else {
-          paths.unshift(item.navKey ? item.navKey + '/' + ppath : ppath);
-        }
-        item = item.parent;
-      }
-      resolvePath = paths.join(SEP).replace(/\/+/g, SEP);
-      routeConfig.resolvePath = resolvePath;
-    }
-    return resolvePath;
   }
 
   _pushRoute(routes, childRoute, parent) {
@@ -384,7 +423,7 @@ export default class Beatle {
           r.path = this._parsePath(r.path, r.name);
         }
 
-        const resolvePath = this.getResolvePath(r);
+        const resolvePath = this.getResolvePath(r, true);
         if (!this._setting.routesMap[resolvePath]) {
           this._setting.routesMap[resolvePath] = r;
           routes.push(r);
@@ -393,7 +432,7 @@ export default class Beatle {
       delete this._setting.routesMap[childRoute.resolvePath];
       delete childRoute.resolvePath;
       childRoute.path = this._parsePath(childRoute.path, childRoute.name);
-      this._setting.routesMap[this.getResolvePath(childRoute)] = childRoute;
+      this._setting.routesMap[this.getResolvePath(childRoute, true)] = childRoute;
     }
   }
   /**
@@ -457,6 +496,9 @@ export default class Beatle {
       // #! 设置路由
       if (routeConfig) {
         RouteComponent.routeOptions = Object.assign(RouteComponent.routeOptions || {}, routeConfig);
+        if (routeConfig.childRoutes) {
+          this.setRoutes(routeConfig.childRoutes, null, routeConfig);
+        }
       }
       const childRoute = route(path, RouteComponent, {
         callback: this._parseRoute.bind(this)
@@ -832,17 +874,17 @@ export default class Beatle {
     rootDom = rootDom || this._setting.rootDom;
     basePath = basePath || this._setting.basePath;
 
-    this._setting.basePath = basePath;
     let appElement;
     const IProvider = getProvider(this.injector, this.globalInjector);
     if (basePath.prototype && basePath.prototype.isReactComponent) {
       appElement = React.createElement(IProvider, {
         store: store
       }, React.createElement(basePath, {
-        history: this._withBasename(basePath),
+        history: this._withBasename(this._setting.basePath),
         routes: routes
       }));
     } else {
+      this._setting.basePath = basePath;
       appElement = React.createElement(IProvider, {
         store: store
       }, React.createElement(Router, {

@@ -36,9 +36,12 @@ class BeatleLink extends React.PureComponent {
     const props = this.props;
     const app = props.appName ? Beatle.getApp(props.appName) : Beatle.defaultApp;
     const route = typeof props.to === 'string' ? app.route(props.to) : null;
-    const to = route && app.getResolvePath(route) || props.to;
+    let to = route && app.getResolvePath(route, true) || props.to;
     const query = Object.assign(props.query || {}, app._setting.query);
-
+    const len = app._setting.basePath.length;
+    if (to.substr(0, len) === app._setting.basePath) {
+      to = to.slice(len);
+    }
     const newProps = {
       to: {
         pathname: to,
