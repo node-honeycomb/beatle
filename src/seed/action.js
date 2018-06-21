@@ -47,9 +47,14 @@ export function getActions({
   const fetch = seed._ajax || new Ajax();
 
   model.ACTION_TYPE_IMMEDIATE = encodeActionType(modelName, '@@UPDATE_STATE');
-  model._reducers = model._reducers || {
+  model._reducers = {
     [model.ACTION_TYPE_IMMEDIATE]: (nextStore, action) => reducerImmediate(nextStore, action, modelName)
   };
+  if (model.reducers) {
+    for (let key in model.reducers) {
+      model._reducers[encodeActionType(modelName, key)] = model.reducers[key];
+    }
+  }
   /**
    * ### 数据模型内的副作用
    *
@@ -265,9 +270,7 @@ export function getProcessorByExec(model, initialState, modelName, actionName, e
         error: encodeActionType(modelName, actionName, 'error')
       };
 
-      dispatch({type: statusMap.start, payload: {data: undefined, store: initialState, arguments: args, exec: exec}});
-
-      return new Promise((resolve, reject) => {
+      const promise = new Promise((resolve, reject) => {
         const errorCallback = function (error) {
           dispatch({type: statusMap.error, error: true, payload: {data: undefined, store: initialState, arguments: args, message: error.message, exec: exec}});
           reject(error);
@@ -304,6 +307,10 @@ export function getProcessorByExec(model, initialState, modelName, actionName, e
 
         return result;
       });
+      // 添加一个promise，用于识别异步
+      dispatch({type: statusMap.start, payload: {data: undefined, store: initialState, arguments: args, exec: exec, promise: promise}});
+
+      return promise;
     };
   };
 }

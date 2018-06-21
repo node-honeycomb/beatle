@@ -266,12 +266,9 @@ export default class Beatle {
       }
       class newComponent extends React.PureComponent {
         render() {
-          return React.createElement(IProvider, {
-            store: component.getStore()
-          }, React.createElement(Router, {
-            history: history,
-            routes: component._setting.routes
-          }));
+          return (<IProvider store={component.getStore()}>
+            <Router history={history} routes={component._setting.routes} />
+          </IProvider>);
         }
       }
       newComponent.routeOptions = component.routeOptions || {};
@@ -323,8 +320,11 @@ export default class Beatle {
         if (isAssign === false) {
           this._pushRoute(this._setting.routes, item, parent);
         }
-        if (item.component && item.component.routeOptions) {
-          Object.assign(item, item.component.routeOptions);
+        if (item.component) {
+          item.component = Beatle.fromLazy(item.component, this);
+          if (item.component.routeOptions) {
+            Object.assign(item, item.component.routeOptions);
+          }
         }
         this._setting.routesMap[this.getResolvePath(item, true)] = item;
         if (item.childRoutes) {
@@ -863,35 +863,33 @@ export default class Beatle {
       return;
     }
     this._hasRendered = true;
-
-    if (typeof rootDom === 'string') {
+    let IRouter = Router;
+    // basePath, renderCb
+    if (typeof rootDom === 'string' || !rootDom || !rootDom.nodeType) {
       renderCb = basePath;
       basePath = rootDom;
       rootDom = null;
     }
-    const store = this.getStore();
+    if (typeof basePath === 'function') {
+      // router, renderCb
+      if (basePath.prototype && basePath.prototype.isReactComponent) {
+        IRouter = basePath;
+        basePath = null;
+      } else {
+        // renderCb
+        renderCb = basePath;
+        basePath = null;
+      }
+    }
+
     const routes = this._setting.routes;
     rootDom = rootDom || this._setting.rootDom;
     basePath = basePath || this._setting.basePath;
 
-    let appElement;
     const IProvider = getProvider(this.injector, this.globalInjector);
-    if (basePath.prototype && basePath.prototype.isReactComponent) {
-      appElement = React.createElement(IProvider, {
-        store: store
-      }, React.createElement(basePath, {
-        history: this._withBasename(this._setting.basePath),
-        routes: routes
-      }));
-    } else {
-      this._setting.basePath = basePath;
-      appElement = React.createElement(IProvider, {
-        store: store
-      }, React.createElement(Router, {
-        history: this._withBasename(basePath),
-        routes: routes
-      }));
-    }
+    const appElement = (<IProvider store={this.getStore()}>
+      <IRouter history={this._withBasename(basePath)} routes={routes} />
+    </IProvider>);
     if (renderCb) {
       renderCb(appElement, rootDom);
     } else {
