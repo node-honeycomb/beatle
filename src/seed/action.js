@@ -128,7 +128,7 @@ export function getActions({
     }
   });
 
-  const actions = model.actions || {};
+  const actions = model.actions ? model.actions : model.actions = {};
   model._actions = model._actions;
   if (!model._actions) {
     model._actions = {};
@@ -345,10 +345,16 @@ export function getProcessor(model, initialState, modelName, actionName, func, g
               action.type = encodeActionType(modelName, action.type);
             }
           } else {
-            action = {
-              type: model.ACTION_TYPE_IMMEDIATE,
-              payload: action
-            };
+            if (action.action) {
+              if (action.action.indexOf('.') === -1) {
+                action.action = typeToAction(modelName, action.action);
+              }
+            } else {
+              action = {
+                type: model.ACTION_TYPE_IMMEDIATE,
+                payload: action
+              };
+            }
           }
           dispatch(action);
           return Promise.resolve(action.payload);

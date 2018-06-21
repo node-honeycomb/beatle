@@ -6,7 +6,7 @@ import {
   throttleHelper,
 } from 'redux-saga/lib/internal/sagaHelpers';
 import logMessages from '../core/messages';
-import {encodeActionType, decodeActionType, actionToType} from './actionType';
+import {encodeActionType, decodeActionType, actionToType, typeToAction} from './actionType';
 
 // ### saga类
 // > see: https://github.com/dvajs/dva/blob/d74d3d7ce1dafeb5e9d009aae4307b305305b288/packages/dva-core/src/index.js
@@ -99,11 +99,17 @@ export default class Saga {
           action.type = encodeActionType(model.displayName, action.type);
         }
       } else {
-        model._emitter.data = action;
-        action = {
-          type: model.ACTION_TYPE_IMMEDIATE,
-          payload: action
-        };
+        if (action.action) {
+          if (action.action.indexOf('.') === -1) {
+            action.action = typeToAction(model.displayName, action.action);
+          }
+        } else {
+          model._emitter.data = action;
+          action = {
+            type: model.ACTION_TYPE_IMMEDIATE,
+            payload: action
+          };
+        }
       }
       return sagaEffects.put(action);
     }
@@ -140,7 +146,7 @@ export default class Saga {
     const prefix = encodeActionType(model.displayName, actionName);
     const sagaWithCatch = function* (option) {
       try {
-        const args = option.payload.arguments || [];
+        const args = (option.payload && (option.payload.store || option.payload.arguments)) ? (option.payload.arguments || []) : [option];
         yield sagaEffects.put({type: encodeActionType(prefix, 'start')});
         yield action(...args.concat(model._emitter));
         yield sagaEffects.put({type: encodeActionType(prefix, 'success')});
