@@ -135,7 +135,9 @@ export function getActions({
     if (model instanceof BaseModel) {
       const keys = Object.getOwnPropertyNames(model.__proto__);
       for (let i = 1, len = keys.length; i < len; i++) {
-        model._actions[keys[i]] = model[keys[i]].bind(model);
+        if (typeof model[keys[i]] === 'function') {
+          model._actions[keys[i]] = model[keys[i]].bind(model);
+        }
       }
     }
   }

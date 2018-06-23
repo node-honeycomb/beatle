@@ -6,6 +6,11 @@ import {map} from 'rxjs/operators';
 function mergeToRender(ob) {
   Object.assign(ob, {
     render(callback) {
+      if (callback.prototype && callback.prototype.isReactComponent) {
+        const Component = callback;
+        /* eslint-disable react/display-name */
+        callback = (obj) => (<Component {...obj} />);
+      }
       ob = ob.pipe(map(callback));
       return (<AsyncComponent observable={ob} />);
     }
@@ -45,8 +50,6 @@ export default class AsyncComponent extends React.PureComponent {
   }
 
   render() {
-    return (
-      <div>{this.state.children}</div>
-    );
+    return this.state.children;
   }
 }

@@ -8,6 +8,60 @@ import cloneDeep from 'lodash/cloneDeep';
 import isPlainObject from '../core/isPlainObject';
 import {getProcessor, getProcessorByExec, getProcessorByGenerator, setReducers} from '../seed/action';
 
+// see: https://github.com/jayphelps/core-decorators
+export const exec = (name, feedback) => (model, method, descriptor) => {
+  const callback = descriptor.initializer ? descriptor.initializer() : descriptor.value;
+  descriptor.initializer = undefined;
+  descriptor.value = function (...args) {
+    if (feedback) {
+      args.push(feedback);
+    }
+    return this.setState({
+      [name]: {
+        exec: method,
+        callback: callback
+      }
+    }, ...args);
+  };
+  return descriptor;
+};
+
+export const observable = (target, name, descriptor) => {
+  target.state = target.state || {};
+  target.state[name] = descriptor.value;
+  descriptor.enumerable = false;
+  return descriptor;
+};
+
+export const computed = (target, name, descriptor) => {
+  target.state = target.state || {};
+  target.state[name] = descriptor.get.call(target);
+  descriptor.enumerable = false;
+  return descriptor;
+};
+
+
+export const action = (target, name, descriptor) => {
+  const method = descriptor.value;
+  descriptor.value = (...args) => {
+    const ret = method.apply(target, args);
+    if (ret && ret.then) {
+      ret.then(() => {
+        target.dispatch({
+          type: target.ACTION_TYPE_IMMEDIATE,
+          payload: target.state
+        });
+      });
+    } else {
+      target.dispatch({
+        type: target.ACTION_TYPE_IMMEDIATE,
+        payload: target.state
+      });
+    }
+  };
+  return descriptor;
+};
+
 export default class BaseModel {
   /**
    * option = {

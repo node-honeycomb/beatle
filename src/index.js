@@ -90,7 +90,7 @@ function mixinApiToStatic(ClassObj, appName) {
     'route',
     'toBindings',
     'run',
-    'observable',
+    'observer',
     'view'
   ];
   apiMethods.forEach(method => {
@@ -239,13 +239,13 @@ const docorators = {
     }
     return app.route(option.path, BaseComponent);
   }, 'route'),
-  // docorator for observable
-  observable: getDecorator((app, option, BaseComponent) => {
+  // docorator for observer
+  observer: getDecorator((app, option, BaseComponent) => {
     if (typeof app === 'string') {
       app = Beatle.getApp(app);
     }
-    return app.connect(option.data, BaseComponent);
-  }, 'observable'),
+    return app.connect(option.inject, BaseComponent);
+  }, 'observer'),
   // decorator for view
   view: getDecorator((app, option, BaseComponent) => {
     if (typeof app === 'string') {

@@ -7,10 +7,12 @@ import Injector from './injector';
 import AsyncComponent from './asyncComponent';
 import service from './service';
 import BaseSelector from './baseSelector';
-import BaseModel from './baseModel';
+import BaseModel, {exec, action, observable, computed} from './baseModel';
 import {EventEmitter} from 'events';
+import isEqual from 'lodash/isEqual';
 import {fromEvent} from 'rxjs/observable/fromEvent';
 import crud from './crud';
+import ReduxSeed from '../seed';
 
 const emitter = new EventEmitter();
 // #! 自增唯一标识
@@ -19,12 +21,21 @@ function guid(name) {
   return name + (++increment);
 }
 
-function getState(currentState, keys) {
+function getState(models, keys) {
   let state;
+  let len = keys.length;
   try {
-    state = currentState;
-    for (let i = 0, len = keys.length; i < len; i++) {
-      state = state[keys[i]];
+    const model = models[keys[0]];
+    state = model.state;
+    if (len === 1) {
+      const newState = Object.assign(state, model._actions);
+      state = {
+        [keys[0]]: newState
+      };
+    } else {
+      for (let i = 1; i < len; i++) {
+        state = state[keys[i]] || model._actions[keys[i]];
+      }
     }
   } catch (e) {
     warning(false, logMessages.selectError, 'select', keys.join('.'), 'damo', 'Beatle');
@@ -34,28 +45,14 @@ function getState(currentState, keys) {
 }
 
 const globalInjector = new Injector();
-const exec = (name, feedback) => (model, method, descriptor) => {
-  const callback = descriptor.initializer ? descriptor.initializer() : descriptor.value;
-  descriptor.initializer = undefined;
-  descriptor.value = function (...args) {
-    if (feedback) {
-      args.push(feedback);
-    }
-    return this.setState({
-      [name]: {
-        exec: method,
-        callback: callback
-      }
-    }, ...args);
-  };
-  return descriptor;
-};
-
 
 export default function enhanceBeatle(Beatle) {
   return class Damo extends Beatle {
     static crud = crud;
     static exec = exec;
+    static action = action;
+    static observable = observable;
+    static computed = computed;
     static BaseModel = BaseModel;
     static BaseSelector = BaseSelector;
     static Injector = Injector;
@@ -91,29 +88,45 @@ export default function enhanceBeatle(Beatle) {
       }
     }
 
-    observable(originData) {
-      if (typeof originData === 'string' && originData.indexOf('.') > -1) {
-        // #! 这里有问题，要通过store.subscribe来实现
-        const store = this.seed.get('store');
-        const state = this.select(originData);
-        const keys = originData.split('.');
-        const eventName = guid('event');
-        store.subscribe(() => {
-          const _state = getState(store.getState(), keys);
-          if (_state !== state) {
-            emitter.emit(eventName, _state.asMutable ? _state.asMutable({deep: true}) : _state);
-          }
-        });
-        originData = fromEvent(emitter, eventName);
+    observer(originData, Com) {
+      if (Com) {
+        if (!originData) {
+          originData = '';
+        }
+        if (typeof originData === 'string') {
+          // #! 这里有问题，要通过store.subscribe来实现
+          const store = this.seed.get('store');
+          const str = originData;
+          const states = this.select(str);
+          const eventName = guid('event');
+          store.subscribe(() => {
+            const _states = this.select(str);
+            if (Array.isArray(states) && states.filter((state, index) => isEqual(state, _states[index])).length || isEqual(_states, states)) {
+              emitter.emit(eventName, _states.asMutable ? _states.asMutable({deep: true}) : _states);
+            }
+          });
+          originData = fromEvent(emitter, eventName);
+        }
+        if (Com === true) {
+          return AsyncComponent.observable(originData);
+        } else {
+          return AsyncComponent.observable(originData).render(Com);
+        }
+      } else {
+        return AsyncComponent.observable(originData);
       }
-      return AsyncComponent.observable(originData);
     }
 
     select(keyStr) {
-      const store = this.seed.get('store');
-      const currentstate = store.getState();
-      const keys = keyStr.split('.');
-      const state = getState(currentstate, keys);
+      const models = ReduxSeed.getRedux(this._setting.seedName).models;
+      let state;
+      if (Array.isArray(keyStr)) {
+        state = keyStr.map(str => {
+          return getState(models, str.split('.'));
+        });
+      } else {
+        state = getState(models, keyStr.split('.'));
+      }
       return state;
     }
 

@@ -6,7 +6,11 @@ export default Beatle.createModel({
   displayName: 'user',
   store: {
     name: 'Donald Trump',
-    list: []
+    list: [],
+    pending: false,
+    error: '',
+    startArguments: [],
+    successArguments: []
   },
   actions: {
     changeName: {

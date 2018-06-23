@@ -127,14 +127,13 @@ export default class ReduxSeed {
           saga: this._saga
         });
         Model.actions = {};
-        Object.defineProperty(Model, 'dispatch', {
-          get: () => {
-            return this.getStore().dispatch;
-          },
-          enumerable: true,
-          configurable: true
-        });
       }
+      Object.defineProperty(Model, 'dispatch', {
+        get: () => {
+          return this.getStore().dispatch;
+        },
+        enumerable: false
+      });
       const store = Model.state = Model.state || Model.store || {};
       let initialState = this._isImmutable ? immutable(store) : store;
 

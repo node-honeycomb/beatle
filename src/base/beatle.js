@@ -72,10 +72,12 @@ export default class Beatle {
     propTypes.checkPropTypes(beatleShape, options, 'BeatleOptions', 'Beatle');
 
     // #! 配置项初始化
+    const name = options.name || 'app';
     this._setting = {
       basePath: options.base || '',
       query: options.env,
-      appName: options.name || 'app',
+      appName: name,
+      seedName: name + new Date().getTime(),
       rootDom: options.root || document.body,
       routes: [],
       routesMap: {},
@@ -159,7 +161,7 @@ export default class Beatle {
 
     const middlewares = options.middlewares || [];
     middlewares.push(this._getMiddleWareFactory());
-    this.seed = new ReduxSeed({name: this._setting.appName, initialState: options.store, middlewares: middlewares, Models: Models, ajax: this.ajax});
+    this.seed = new ReduxSeed({name: this._setting.seedName, initialState: options.store, middlewares: middlewares, Models: Models, ajax: this.ajax});
 
     // #! 自动加载路由
     if (options.autoLoadRoute && Beatle.autoLoad.loadRoutes) {
@@ -301,7 +303,7 @@ export default class Beatle {
    * | run([rootDom, basePath]) | rootDom `Object`, basePath `String` | 启动应用 |
    */
   getStore() {
-    return ReduxSeed.getRedux(this._setting.appName).store;
+    return ReduxSeed.getRedux(this._setting.seedName).store;
   }
 
   getRoutes() {
@@ -675,7 +677,7 @@ export default class Beatle {
   }
 
   get dispatch() {
-    return ReduxSeed.getRedux(this._setting.appName).store.dispatch;
+    return ReduxSeed.getRedux(this._setting.seedName).store.dispatch;
   }
 
   connect(models, SceneComponent, flattern) {
@@ -734,7 +736,7 @@ export default class Beatle {
 
   toBindings(bindings, flattern) {
     // #! 从redux模块中获取model实例和所有的action
-    const {models, actions} = ReduxSeed.getRedux(this._setting.appName);
+    const {models, actions} = ReduxSeed.getRedux(this._setting.seedName);
 
     return {
       flattern: flattern,
