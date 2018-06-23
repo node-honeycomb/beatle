@@ -25,17 +25,23 @@ function getState(models, keys) {
   let state;
   let len = keys.length;
   try {
-    const model = models[keys[0]];
-    state = model.state;
-    if (len === 1) {
-      const newState = Object.assign(state, model._actions);
-      state = {
-        [keys[0]]: newState
-      };
-    } else {
-      for (let i = 1; i < len; i++) {
-        state = state[keys[i]] || model._actions[keys[i]];
+    if (len) {
+      const model = models[keys[0]];
+      if (model) {
+        state = model.state;
+        if (len === 1) {
+          const newState = Object.assign(state, model._actions);
+          state = {
+            [keys[0]]: newState
+          };
+        } else {
+          for (let i = 1; i < len; i++) {
+            state = state[keys[i]] || model._actions[keys[i]];
+          }
+        }
       }
+    } else {
+      state = models['__pure_reducer__'].state;
     }
   } catch (e) {
     warning(false, logMessages.selectError, 'select', keys.join('.'), 'damo', 'Beatle');
@@ -89,29 +95,25 @@ export default function enhanceBeatle(Beatle) {
     }
 
     observer(originData, Com) {
-      if (Com) {
+      if (Com === true) {
         if (!originData) {
           originData = '';
         }
-        if (typeof originData === 'string') {
-          // #! 这里有问题，要通过store.subscribe来实现
-          const store = this.seed.get('store');
-          const str = originData;
-          const states = this.select(str);
-          const eventName = guid('event');
-          store.subscribe(() => {
-            const _states = this.select(str);
-            if (Array.isArray(states) && states.filter((state, index) => isEqual(state, _states[index])).length || isEqual(_states, states)) {
-              emitter.emit(eventName, _states.asMutable ? _states.asMutable({deep: true}) : _states);
-            }
-          });
-          originData = fromEvent(emitter, eventName);
-        }
-        if (Com === true) {
-          return AsyncComponent.observable(originData);
-        } else {
-          return AsyncComponent.observable(originData).render(Com);
-        }
+        // #! 这里有问题，要通过store.subscribe来实现
+        const store = this.seed.get('store');
+        const str = originData;
+        const states = this.select(str);
+        const eventName = guid('event');
+        store.subscribe(() => {
+          const _states = this.select(str);
+          if (Array.isArray(states) && states.filter((state, index) => isEqual(state, _states[index])).length || isEqual(_states, states)) {
+            emitter.emit(eventName, _states.asMutable ? _states.asMutable({deep: true}) : _states);
+          }
+        });
+        originData = fromEvent(emitter, eventName);
+        return AsyncComponent.observable(originData);
+      } else if (Com) {
+        return this.connect(originData, Com, isPlainObject(originData));
       } else {
         return AsyncComponent.observable(originData);
       }

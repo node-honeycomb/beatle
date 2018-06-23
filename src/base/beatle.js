@@ -809,7 +809,7 @@ export default class Beatle {
                 let keys = binding[key].split('.');
                 let mAction = {};
                 if (actions[keys[0]] && keys[1] === 'actions') {
-                  iAction[key] = (...args) => {
+                  mAction[key] = (...args) => {
                     const result = actions[keys[0]][keys[2]].apply(null, args);
                     if (result && result.then) {
                       return result;

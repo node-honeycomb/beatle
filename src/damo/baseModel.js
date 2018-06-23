@@ -28,34 +28,44 @@ export const exec = (name, feedback) => (model, method, descriptor) => {
 
 export const observable = (target, name, descriptor) => {
   target.state = target.state || {};
-  target.state[name] = descriptor.value;
-  descriptor.enumerable = false;
-  return descriptor;
+  target.state[name] = descriptor.initializer.call(target);
+  return {
+    set(v) {
+      target.state[name] = v;
+    },
+    enumerable: false
+  };
 };
 
 export const computed = (target, name, descriptor) => {
   target.state = target.state || {};
-  target.state[name] = descriptor.get.call(target);
-  descriptor.enumerable = false;
+  const method = descriptor.get;
+  Object.defineProperty(target.state, name, {
+    get() {
+      return method.call(target);
+    },
+    enumerable: true,
+    configuration: true
+  });
   return descriptor;
 };
 
 
 export const action = (target, name, descriptor) => {
   const method = descriptor.value;
-  descriptor.value = (...args) => {
-    const ret = method.apply(target, args);
+  descriptor.value = function (...args) {
+    const ret = method.apply(this, args);
     if (ret && ret.then) {
       ret.then(() => {
-        target.dispatch({
-          type: target.ACTION_TYPE_IMMEDIATE,
-          payload: target.state
+        this.dispatch({
+          type: this.ACTION_TYPE_IMMEDIATE,
+          payload: this.state
         });
       });
     } else {
-      target.dispatch({
-        type: target.ACTION_TYPE_IMMEDIATE,
-        payload: target.state
+      this.dispatch({
+        type: this.ACTION_TYPE_IMMEDIATE,
+        payload: this.state
       });
     }
   };

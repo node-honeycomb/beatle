@@ -199,14 +199,14 @@ Object.assign(Beatle, {
 
 mixinApiToStatic(Beatle);
 
-function getDecorator(fn, name) {
+function getDecorator(fn) {
   return (option = {}) => BaseComponent => {
-    let app = typeof option.app === 'string' ? Beatle.instances[option.app] : option.app || Beatle.defaultApp;
-    if (!app) {
-      warning(false, messages.appoint, name, 'Beatle');
-    }
-
-    return fn(app || Beatle, option, BaseComponent);
+    let app = typeof option.app === 'string' ? Beatle.getApp(option.app) : option.app || Beatle.defaultApp;
+    // if (!app) {
+    //   warning(false, messages.appoint, name, 'Beatle');
+    // }
+    //  || Beatle
+    return fn(app, option, BaseComponent);
   };
 }
 
@@ -217,14 +217,14 @@ const docorators = {
       app = Beatle.getApp(app);
     }
     return app.connect(option.bindings, BaseComponent, option.flattern);
-  }, 'connect'),
+  }),
   // docorator for model
   model: getDecorator((app, option, Model) => {
     if (typeof app === 'string') {
       app = Beatle.getApp(app);
     }
     return app.model(Model, option.Resource);
-  }, 'model'),
+  }),
   // decorator for createModel
   createModel: Resource => Model => {
     return BeatlePro.createModel(Model, Resource);
@@ -238,21 +238,21 @@ const docorators = {
       BaseComponent.routeOptions = Object.assign(BaseComponent.routeOptions || {}, option.routeOptions);
     }
     return app.route(option.path, BaseComponent);
-  }, 'route'),
+  }),
   // docorator for observer
   observer: getDecorator((app, option, BaseComponent) => {
     if (typeof app === 'string') {
       app = Beatle.getApp(app);
     }
-    return app.connect(option.inject, BaseComponent);
-  }, 'observer'),
+    return app.observer(option.inject, BaseComponent);
+  }),
   // decorator for view
   view: getDecorator((app, option, BaseComponent) => {
     if (typeof app === 'string') {
       app = Beatle.getApp(app);
     }
     return app.view(option.selector, BaseComponent, option.providers, option.bindings, option.hookActions);
-  }, 'view')
+  })
 };
 
 const BeatlePro = enhancleBeatle(Beatle);
