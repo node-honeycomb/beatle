@@ -724,8 +724,8 @@ export default class Beatle {
      */
     if (models.prototype && models.prototype.isReactComponent) {
       SceneComponent = models;
-      if (SceneComponent.bindings) {
-        models = (store, props) => SceneComponent.bindings(store['__pure_reducer__'], props);
+      if (SceneComponent.getState) {
+        models = (store, props) => SceneComponent.getState(store['__pure_reducer__'], props);
         flattern = true;
       } else {
         models = [];
@@ -779,7 +779,7 @@ export default class Beatle {
         });
         return iState;
       },
-      eventBindings: typeof bindings[1] === 'function' ? bindings[1] : (dispatch) => {
+      eventBindings: typeof bindings[1] === 'function' ? (dispatch, props) => bindings[1](dispatch, props, actions) : (dispatch) => {
         const iAction = {};
         bindings.forEach((binding) => {
           if (typeof binding === 'string' && actions[binding]) {

@@ -128,7 +128,11 @@ export default class BaseSelector extends EventEmitter {
             return from(promise).pipe(delay(option.delay));
           }
         } else {
-          return of(option.end);
+          if (option.end && option.end.then) {
+            return of(option.end);
+          } else {
+            return of(Promise.resolve(option.end));
+          }
         }
       })
     ).pipe(

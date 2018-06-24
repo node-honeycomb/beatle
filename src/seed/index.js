@@ -79,6 +79,7 @@ export default class ReduxSeed {
     this._saga = new Saga();
     this._isImmutable = options.initialState === undefined || immutable.isImmutable(options.initialState);
     this._pureReducers = [];
+    this._pureReducers.state = {};
     this._init(this._instanceName);
     const initialState = this._isImmutable && options.initialState ? options.initialState.asMutable({deep: true}) : options.initialState;
     this._initStore(initialState, options.middlewares.concat(this._saga.getMiddleware(this.getModel.bind(this))), options.Models);
@@ -101,7 +102,7 @@ export default class ReduxSeed {
   }
 
   _initStore(initialState = {}, middlewares, Models) {
-    initialState['__pure_reducer__'] = {};
+    initialState['__pure_reducer__'] = this._pureReducers.state;
     configureStore(initialState, middlewares, () => {
       return this.reducerBuilder(Models);
     }, (store) => {
@@ -190,7 +191,7 @@ export default class ReduxSeed {
     for (let name in Models) {
       this._setModel(redux, name, Models[name]);
     }
-    redux.rootReducer['__pure_reducer__'] = (nextStore = {}, action) => {
+    redux.rootReducer['__pure_reducer__'] = (nextStore = this._pureReducers.state, action) => {
       if (this._pureReducers.length) {
         const newStore = {};
         this._pureReducers.forEach(obj => {
@@ -246,6 +247,9 @@ export default class ReduxSeed {
           name: Model,
           reducer: Resource
         });
+        if (arguments[2] !== undefined) {
+          this._pureReducers.state[Model] = arguments[2];
+        }
       }
     }
   }

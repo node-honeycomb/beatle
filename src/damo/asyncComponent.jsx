@@ -2,6 +2,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {from} from 'rxjs/observable/from';
 import {map} from 'rxjs/operators';
+import isPlainObject from '../core/isPlainObject';
 
 function mergeToRender(ob) {
   Object.assign(ob, {
@@ -25,7 +26,11 @@ export default class AsyncComponent extends React.PureComponent {
   }
   // #! 把数据转成observable
   static observable = function (ob) {
-    return mergeToRender(from(ob));
+    if (Object(ob) !== ob || isPlainObject(ob)) {
+      return mergeToRender(from(Promise.resolve(ob)));
+    } else {
+      return mergeToRender(from(ob));
+    }
   }
 
   state = {

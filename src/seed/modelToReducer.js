@@ -25,6 +25,8 @@ export default function modelToReducer(model, initialState, isImmutable) {
       // 当有返回值时，用返回值作为新的state, 否则使用prevStore对象。
       if (nextStore === undefined || nextStore instanceof StateObserver) {
         nextStore = prevStore.getStore();
+      } else {
+        model.state = nextStore.asMutable ? nextStore.asMutable({deep: true}) : nextStore;
       }
     }
 

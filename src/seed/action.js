@@ -48,7 +48,7 @@ export function getActions({
 
   model.ACTION_TYPE_IMMEDIATE = encodeActionType(modelName, '@@UPDATE_STATE');
   model._reducers = {
-    [model.ACTION_TYPE_IMMEDIATE]: (nextStore, action) => reducerImmediate(nextStore, action, modelName)
+    [model.ACTION_TYPE_IMMEDIATE]: (nextStore, payload) => reducerImmediate(nextStore, payload, modelName)
   };
   if (model.reducers) {
     for (let key in model.reducers) {
@@ -250,6 +250,12 @@ export function getActions({
           actionCfg._processor = model._actions[actionKey] = getProcessor(model, initialState, modelName, actionKey, actionCfg, () => seed.getStore().getState()[modelName]);
         }
       }
+      Object.defineProperty(actions, actionKey, {
+        get: () => {
+          return (...args) => model._actions[actionKey].apply(model, args)(model.dispatch);
+        },
+        enumerable: false
+      });
     }
   });
 
@@ -339,6 +345,13 @@ export function getProcessor(model, initialState, modelName, actionName, func, g
     return (dispatch) => {
       // 兼容之前副作用
       if (typeof func === 'function' && func.toString().split(')')[0].split('(').pop().indexOf('payload') === -1) {
+        let noDispatch = true;
+        const showDispatch = action => {
+          if (noDispatch) {
+            dispatch(action);
+            noDispatch = true;
+          }
+        };
         const newDispatch = (action) => {
           if (action.type) {
             const [modelName, name] = decodeActionType(action.type);
@@ -358,7 +371,7 @@ export function getProcessor(model, initialState, modelName, actionName, func, g
               };
             }
           }
-          dispatch(action);
+          showDispatch(action);
           return Promise.resolve(action.payload);
         };
         const result = func.apply(model, args.concat({
@@ -369,9 +382,20 @@ export function getProcessor(model, initialState, modelName, actionName, func, g
             return Promise.resolve(modelState[name] && modelState[name].asMutable({deep: deep}));
           }
         }));
+
         if (result && result.then) {
+          result.then((ret) => showDispatch({
+            type: model.ACTION_TYPE_IMMEDIATE,
+            payload: ret
+          }));
           return result;
         } else {
+          if (result) {
+            showDispatch({
+              type: model.ACTION_TYPE_IMMEDIATE,
+              payload: result
+            });
+          }
           return Promise.resolve(result);
         }
       } else {

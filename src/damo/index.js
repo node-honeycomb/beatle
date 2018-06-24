@@ -95,10 +95,13 @@ export default function enhanceBeatle(Beatle) {
     }
 
     observer(originData, Com) {
-      if (Com === true) {
-        if (!originData) {
-          originData = '';
-        }
+      if (Com) {
+        return this.connect(originData, Com, isPlainObject(originData));
+      }
+      if (!originData) {
+        originData = '';
+      }
+      if (typeof originData === 'function' || typeof originData === 'string') {
         // #! 这里有问题，要通过store.subscribe来实现
         const store = this.seed.get('store');
         const str = originData;
@@ -106,26 +109,27 @@ export default function enhanceBeatle(Beatle) {
         const eventName = guid('event');
         store.subscribe(() => {
           const _states = this.select(str);
-          if (Array.isArray(states) && states.filter((state, index) => isEqual(state, _states[index])).length || isEqual(_states, states)) {
-            emitter.emit(eventName, _states.asMutable ? _states.asMutable({deep: true}) : _states);
+          if (Array.isArray(states) && states.filter((state, index) => !isEqual(state, _states[index])).length || !isEqual(_states, states)) {
+            emitter.emit(eventName, _states && _states.asMutable ? _states.asMutable({deep: true}) : _states);
           }
         });
         originData = fromEvent(emitter, eventName);
         return AsyncComponent.observable(originData);
-      } else if (Com) {
-        return this.connect(originData, Com, isPlainObject(originData));
       } else {
         return AsyncComponent.observable(originData);
       }
     }
 
     select(keyStr) {
-      const models = ReduxSeed.getRedux(this._setting.seedName).models;
+      const seed = ReduxSeed.getRedux(this._setting.seedName);
+      const models = seed.models;
       let state;
       if (Array.isArray(keyStr)) {
         state = keyStr.map(str => {
           return getState(models, str.split('.'));
         });
+      } else if (typeof keyStr === 'function') {
+        state = keyStr(seed.store.getState());
       } else {
         state = getState(models, keyStr.split('.'));
       }

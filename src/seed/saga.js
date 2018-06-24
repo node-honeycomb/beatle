@@ -39,12 +39,19 @@ export default class Saga {
     return () => next => action => {
       if (action.action) {
         action.type = actionToType(action.action);
-      } else if (action.type) {
+      }
+      if (action.type) {
         const [modelName, actionName] = decodeActionType(action.type);
         const model = getModel(modelName);
-        if (model && actionName && model.effects[actionName]) {
-          // 得出resolve 和 reject交付给saga，不再往下走
-          return this._getWatchPromise(action.type);
+        if (model && actionName) {
+          if (model.effects[actionName]) {
+            // 得出resolve 和 reject交付给saga，不再往下走
+            return this._getWatchPromise(action.type);
+          } else if (model._actions[actionName]) {
+            return model._actions[actionName].apply(model, action.arguments)(model.dispatch);
+          } else {
+            return next(action);
+          }
         } else {
           return next(action);
         }
