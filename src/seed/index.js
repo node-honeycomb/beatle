@@ -168,6 +168,11 @@ export default class ReduxSeed {
     return ReduxSeed.getRedux(this._instanceName)[name];
   }
 
+  subscribe(callback) {
+    const redux = ReduxSeed.getRedux(this._instanceName);
+    return redux.store.subscribe((() => callback(redux.store.getState())));
+  }
+
   dispatch(action) {
     const redux = ReduxSeed.getRedux(this._instanceName);
     if (Object(action) === action && !action.type) {

@@ -81,7 +81,21 @@ function getState(payload, processData, pure) {
   }
 }
 
-export default {
+const crud = {
+  console: {
+    success: window.console.info,
+    error: window.console.error
+  },
+  message: (sucMsg, errMsg) => {
+    return (err) => {
+      if (err) {
+        crud.console.error(errMsg);
+      } else  {
+        crud.console.success(sucMsg);
+      }
+    };
+  },
+
   item: {},
   itemsEntry: {
     data: [],
@@ -162,3 +176,4 @@ export default {
   }
 };
 
+export default crud;

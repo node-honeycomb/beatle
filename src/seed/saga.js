@@ -37,8 +37,8 @@ export default class Saga {
 
   getMiddleware(getModel) {
     return () => next => action => {
-      if (action.action) {
-        action.type = actionToType(action.action);
+      if (action.name) {
+        action.type = actionToType(action.name);
       }
       if (action.type) {
         const [modelName, actionName] = decodeActionType(action.type);
@@ -48,7 +48,7 @@ export default class Saga {
             // 得出resolve 和 reject交付给saga，不再往下走
             return this._getWatchPromise(action.type);
           } else if (model._actions[actionName]) {
-            return model._actions[actionName].apply(model, action.arguments)(model.dispatch);
+            return model._actions[actionName].apply(model, action.payload && action.payload.arguments)(model.dispatch);
           } else {
             return next(action);
           }
@@ -106,9 +106,9 @@ export default class Saga {
           action.type = encodeActionType(model.displayName, action.type);
         }
       } else {
-        if (action.action) {
-          if (action.action.indexOf('.') === -1) {
-            action.action = typeToAction(model.displayName, action.action);
+        if (action.name) {
+          if (action.name.indexOf('.') === -1) {
+            action.name = typeToAction(model.displayName, action.name);
           }
         } else {
           model._emitter.data = action;

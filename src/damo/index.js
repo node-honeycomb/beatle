@@ -93,7 +93,7 @@ export default function enhanceBeatle(Beatle) {
         return obj;
       }
     }
-
+    
     observer(originData, Com) {
       if (Com) {
         return this.connect(originData, Com, isPlainObject(originData));
@@ -107,12 +107,18 @@ export default function enhanceBeatle(Beatle) {
         const str = originData;
         const states = this.select(str);
         const eventName = guid('event');
-        store.subscribe(() => {
-          const _states = this.select(str);
-          if (Array.isArray(states) && states.filter((state, index) => !isEqual(state, _states[index])).length || !isEqual(_states, states)) {
-            emitter.emit(eventName, _states && _states.asMutable ? _states.asMutable({deep: true}) : _states);
-          }
-        });
+        let unsubscribe;
+        const trySubscribe = () => {
+          unsubscribe && unsubscribe();
+          unsubscribe = store.subscribe(() => {
+            const _states = this.select(str);
+            if (Array.isArray(states) && states.filter((state, index) => !isEqual(state, _states[index])).length || !isEqual(_states, states)) {
+              emitter.emit(eventName, _states && _states.asMutable ? _states.asMutable({deep: true}) : _states);
+              trySubscribe();
+            }
+          });
+        };
+        trySubscribe();
         originData = fromEvent(emitter, eventName);
         return AsyncComponent.observable(originData);
       } else {
@@ -155,18 +161,7 @@ export default function enhanceBeatle(Beatle) {
         providers = [].concat(providers || []);
       }
       // #! 否则注入到全局服务中
-      if (Array.isArray(providers)) {
-        this
-          .injector
-          .setServices(providers);
-      } else {
-        this
-          .injector
-          .setServices(Object.keys(providers).map(key => {
-            providers[key].displayName = providers[key].displayName || key;
-            return providers[key];
-          }));
-      }
+      this.injector.setServices(providers);
     }
 
     view(selector, SceneComponent, providers, bindings, hookActions) {
@@ -180,7 +175,7 @@ export default function enhanceBeatle(Beatle) {
       // #! selector实例
       if (selector && selector.prototype instanceof BaseSelector) {
         selector.displayName = selector.displayName || guid('selector');
-        selector = this.injector.instantiate(selector, selector.displayName);
+        selector = this.injector.instantiate(selector);
         selector.bindings = selector.bindings || bindings;
         selector.hookActions = selector.hookActions || hookActions;
       } else {
@@ -193,7 +188,7 @@ export default function enhanceBeatle(Beatle) {
         selector.hookActions = hookActions;
       }
       if (selector.bindings) {
-        Object.assign(selector, this.toBindings(selector.bindings));
+        Object.assign(selector, this.toBindings(selector.bindings, selector.flattern, selector));
       }
       // #! 绑定组件, 连接到redux
       SceneComponent = connect(selector, this.dispatch.bind(this))(SceneComponent);

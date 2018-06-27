@@ -31,7 +31,7 @@ export const observable = (target, name, descriptor) => {
   target.state[name] = descriptor.initializer.call(target);
   return {
     set(v) {
-      target.state[name] = v;
+      this.state[name] = v;
     },
     enumerable: false
   };

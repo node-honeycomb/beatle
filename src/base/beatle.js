@@ -195,10 +195,10 @@ export default class Beatle {
   _getMiddleWareFactory() {
     return (store) => (next) => (action) => {
       const callback = (nextAction) => {
-        const middleware = this._middlewares[callback.pos++];
         if (nextAction instanceof Error) {
           throw nextAction;
         }
+        const middleware = this._middlewares[callback.pos++];
         if (middleware) {
           middleware(nextAction, callback, store.dispatch);
         } else {
@@ -242,6 +242,7 @@ export default class Beatle {
       // 相同路由下增加路径
       if (self._setting.history === history) {
         component._setting.basePath = ''; // this._setting.basePath;
+        component._setting.parentPath = this._setting.basePath;
         for (key in component._setting.routesMap) {
           _routeCfg = component._setting.routesMap[key];
           // delete _routeCfg.resolvePath;
@@ -734,13 +735,13 @@ export default class Beatle {
     return connect(this.toBindings([].concat(models), flattern), this.dispatch.bind(this))(SceneComponent);
   }
 
-  toBindings(bindings, flattern) {
+  toBindings(bindings, flattern, context) {
     // #! 从redux模块中获取model实例和所有的action
     const {models, actions} = ReduxSeed.getRedux(this._setting.seedName);
 
     return {
       flattern: flattern,
-      dataBindings: typeof bindings[0] === 'function' ? bindings[0] : (state) => {
+      dataBindings: typeof bindings[0] === 'function' ? bindings[0].bind(context) : (state) => {
         const iState = {};
         bindings.forEach((binding) => {
           if (typeof binding === 'string') {
@@ -779,7 +780,7 @@ export default class Beatle {
         });
         return iState;
       },
-      eventBindings: typeof bindings[1] === 'function' ? (dispatch, props) => bindings[1](dispatch, props, actions) : (dispatch) => {
+      eventBindings: typeof bindings[1] === 'function' ? (dispatch, props) => bindings[1].call(context, dispatch, props, actions) : (dispatch) => {
         const iAction = {};
         bindings.forEach((binding) => {
           if (typeof binding === 'string' && actions[binding]) {

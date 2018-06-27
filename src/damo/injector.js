@@ -1,6 +1,7 @@
 import isPlainObject from 'lodash/isPlainObject';
 import warning from 'fbjs/lib/warning';
 import logMessages from '../core/messages';
+import extractModules from '../core/extractModules';
 
 /* eslint-disable no-useless-escape */
 var ARROW_ARG = /^([^\(]+?)=>/;
@@ -124,13 +125,13 @@ export default class Injector {
     }
   }
 
-  instantiate(provider, serviceName, getService) {
+  instantiate(provider, getService) {
     // + Check if Type is annotated and use just the given function at n-1 as
     // parameter  e.g. someModule.factory('greeter', ['$window',
     // function(renamed$window) {}]);  > Object creation:
     // http://jsperf.com/create-constructor/2
     const instance = Object.create(provider.prototype || null);
-    const returnedValue = invoke(provider, serviceName, (name) => {
+    const returnedValue = invoke(provider, provider.displayName, (name) => {
       const service = getService && getService(name);
       if (service) {
         return service;
@@ -142,25 +143,21 @@ export default class Injector {
   }
 
   setServices(Services) {
-    Services.forEach(Service => {
-      this.setService(Service);
-    });
+    // #! 否则注入到全局服务中
+    Services = extractModules(Services);
+    for (let name in Services) {
+      this.setService(Services[name]);
+    }
   }
 
   setService(Service) {
-    if (Array.isArray(Service)) {
+    const name = Service.displayName;
+    if (name) {
+      this._services[name] = this.instantiate(Service);
+    } else if (Array.isArray(Service) || isPlainObject(Service)) {
       this.setServices(Service);
     } else {
-      if (isPlainObject(Service)) {
-        this.setServices(Object.keys(Service).map(key => Service[key]));
-      } else {
-        const name = Service.displayName;
-        if (name) {
-          this._services[name] = this.instantiate(Service, name);
-        } else {
-          warning(false, logMessages.displayName, 'setService', 'injector', 'Beatle');
-        }
-      }
+      warning(false, logMessages.displayName, 'setService', 'injector', 'Beatle');
     }
   }
 

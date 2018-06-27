@@ -9,6 +9,7 @@ import modelChecker from './base/model';
 import resourceChecker from './base/resource';
 import warning from 'fbjs/lib/warning';
 import messages from './core/messages';
+import history from 'history';
 /**
  * ### 提供Link标签，对react-router的Link标签做了Hoc
  *
@@ -38,8 +39,8 @@ class BeatleLink extends React.PureComponent {
     const route = typeof props.to === 'string' ? app.route(props.to) : null;
     let to = route && app.getResolvePath(route, true) || props.to;
     const query = Object.assign(props.query || {}, app._setting.query);
-    const len = app._setting.basePath.length;
-    if (to.substr(0, len) === app._setting.basePath) {
+    const len = app._setting.parentPath && app._setting.parentPath.length;
+    if (len && to.substr(0, len) === app._setting.parentPath) {
       to = to.slice(len);
     }
     const newProps = {
@@ -256,6 +257,17 @@ const docorators = {
 };
 
 const BeatlePro = enhancleBeatle(Beatle);
+
+['push', 'replace', 'go', 'goBack', 'goForward'].forEach(method => {
+  BeatlePro.prototype[method] = function (path, state) {
+    if (typeof path === 'string') {
+      const routeConfig = this.route(path);
+      path = this.getResolvePath(routeConfig);
+    }
+    history[method](path, state);
+  };
+});
+
 BeatlePro.prototype.version = '1.0.4';
 module.exports = BeatlePro;
 

@@ -14,35 +14,35 @@ export default Beatle.createModel({
   },
   actions: {
     changeName: {
-      callback: function (store, action) {
-        const data = action.arguments[0];
+      callback: function (store, payload) {
+        const data = payload.arguments[0];
         store.name = data;
       }
     },
     getList: {
       callback: {
-        start: (store, action) => {
+        start: (store, payload) => {
           store.pending = true;
-          store.startArguments = action.arguments;
+          store.startArguments = payload.arguments;
         },
-        success: (store, action) => {
+        success: (store, payload) => {
           store.pending = false;
-          store.successArguments = action.arguments;
-          store.list = action.data;
+          store.successArguments = payload.arguments;
+          store.list = payload.data;
         }
       }
     },
     getListFail: {
       callback: {
-        error: (store, action) => {
+        error: (store, paylaod) => {
           store.error = 'error found.';
         }
       }
     },
     postUser: {
       callback: {
-        success: (store, action) => {
-          if (action.data.code === 'SUCCESS') {
+        success: (store, paylaod) => {
+          if (paylaod.data.code === 'SUCCESS') {
             store.postUser = true;
           }
         }
@@ -50,8 +50,8 @@ export default Beatle.createModel({
     },
     putUser: {
       callback: {
-        success: (store, action) => {
-          if (action.data.code === 'SUCCESS') {
+        success: (store, paylaod) => {
+          if (paylaod.data.code === 'SUCCESS') {
             store.putUser = true;
           }
         }
@@ -59,8 +59,8 @@ export default Beatle.createModel({
     },
     deleteUser: {
       callback: {
-        success: (store, action) => {
-          if (action.data.code === 'SUCCESS') {
+        success: (store, paylaod) => {
+          if (paylaod.data.code === 'SUCCESS') {
             store.deleteUser = true;
           }
         }

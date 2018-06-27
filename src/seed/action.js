@@ -360,9 +360,9 @@ export function getProcessor(model, initialState, modelName, actionName, func, g
               action.type = encodeActionType(modelName, action.type);
             }
           } else {
-            if (action.action) {
-              if (action.action.indexOf('.') === -1) {
-                action.action = typeToAction(modelName, action.action);
+            if (action.name) {
+              if (action.name.indexOf('.') === -1) {
+                action.name = typeToAction(modelName, action.name);
               }
             } else {
               action = {

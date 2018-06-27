@@ -375,7 +375,7 @@ seed实例是[ReduxSeed](#class-reduxseed)实例，`app.getStore()`实际上是�
 | model(Model) | Model `Object` | 注册数据模型 |
 | connect(bindings, component[, context, flattern]) | bindings `String︱Object︱Array`, component `ReactComponent`, context `Object`, flattern `Boolean` | 设置视图, binding指定注入数据模型或者根据数据模型注入数据和方法 |
 | service(providers, isGlobal) | providers `<Object|Function|Array>`, isGlobal `Boolean` | 注册全局服务（通用js对象）|
-| observable(obj) | obj `<Array|Promise|Observable>` | 把数据转为观察序列 |
+| observer(obj) | obj `<Array|Promise|Observable>` | 把数据转为观察序列 |
 | view(Selector, component, providers) | Selector `Object`, component: `ReactComponent`, providers: `Array<Object|Function|Array>` | 设置视图，并注入context |
 | run([rootDom, basePath]) | rootDom `Object`, basePath `String` | 启动应用 |
 
@@ -515,18 +515,18 @@ seed实例是[ReduxSeed](#class-reduxseed)实例，`app.getStore()`实际上是�
   // 输出4, 因为d依赖于c + 1， c依赖于b + 1， b依赖于a + 1
   console.log(d.v);
 ```
-### app.observable(obj)
+### app.observer(obj)
 * obj <`Array|Promise|Observable`> 指定需要转为序列的数据
 * return <`Observable`> 返回可订阅序列
 
 ```javascript
-const stream = app.observable([1, 2, 3]);
+const stream = app.observer([1, 2, 3]);
 stream.subscribe(v => {
   console.log(v + ', ');
 });
 // 输出 1, 2, 3
 
-const stream = app.observable(Promise.resolve('123'));
+const stream = app.observer(Promise.resolve('123'));
 stream.subscribe(v => {
   console.log(v);
 });
@@ -538,7 +538,7 @@ const promise = new Promise(resolve => {
   }, 1000);
 });
 // 针对react特殊定义，可以输出异步组件
-ReactDOM.render( => (<div>Hi, {app.observable(promise).render(d => d.name)}</div>), document.body);
+ReactDOM.render( => (<div>Hi, {app.observer(promise).render(d => d.name)}</div>), document.body);
 ```
 
 > Observable序列是rxjs中的概念，适用于把异步数据按时间轴转换为有顺序的序列数据，方便操作。
