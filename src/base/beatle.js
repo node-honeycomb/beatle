@@ -166,13 +166,13 @@ export default class Beatle {
     // #! 自动加载路由
     if (options.autoLoadRoute && Beatle.autoLoad.loadRoutes) {
       try {
-        this.routesFactory(Beatle.autoLoad.loadRoutes());
+        this.routesFactory(Beatle.autoLoad.loadRoutes(), options);
       } catch (x) {
         window.console.error(x);
       }
     }
     if (options.routes) {
-      this.setRoutes(options.routes, false);
+      this.setRoutes(options.routes, false, null, options);
     }
 
     Object.assign(this.injector._services, {
@@ -228,56 +228,74 @@ export default class Beatle {
     }
     return path;
   }
-  _parseRoute(routeConfig, strict) {
-    // #! 如果设置路由是一个子App
-    if (routeConfig.component instanceof Beatle) {
-      const component = routeConfig.component;
-      const self = this;
-      const basePath = routeConfig.path || routeConfig.name;
-      const baseName = basePath[0] === '/' ? basePath : self._setting.basePath + SEP + basePath;
-      const IProvider = getProvider(component.injector, component.globalInjector);
-      let history = component._setting.history;
-      let key;
-      let _routeCfg;
-      // 相同路由下增加路径
-      if (self._setting.history === history) {
-        component._setting.basePath = ''; // this._setting.basePath;
-        component._setting.parentPath = this._setting.basePath;
-        for (key in component._setting.routesMap) {
-          _routeCfg = component._setting.routesMap[key];
-          // delete _routeCfg.resolvePath;
-          if (_routeCfg.path && _routeCfg.path.indexOf('http') !== 0) {
-            if (_routeCfg.path === SEP) {
-              _routeCfg.path = basePath;
-              _routeCfg.resolvePath = baseName;
-            } else {
-              if (_routeCfg.path[0] === SEP) {
-                _routeCfg.path = basePath + _routeCfg.path;
-                _routeCfg.resolvePath = baseName + _routeCfg.resolvePath;
-                if (_routeCfg.path[0] !== SEP) {
-                  _routeCfg.path = SEP + _routeCfg.path;
-                }
-              } else {
-                _routeCfg.path = baseName + SEP + _routeCfg.path;
-                _routeCfg.resolvePath = baseName + SEP + _routeCfg.resolvePath;
+  _convertAppToComponent(appComponent, basePath) {
+    const self = this;
+    const baseName = basePath[0] === '/' ? basePath : self._setting.basePath + SEP + basePath;
+    const IProvider = getProvider(appComponent.injector, appComponent.globalInjector);
+    let history = appComponent._setting.history;
+    let key;
+    let _routeCfg;
+    // 相同路由下增加路径
+    if (self._setting.history === history) {
+      appComponent._setting.basePath = ''; // this._setting.basePath;
+      appComponent._setting.parentPath = this._setting.basePath;
+      for (key in appComponent._setting.routesMap) {
+        _routeCfg = appComponent._setting.routesMap[key];
+        // delete _routeCfg.resolvePath;
+        if (_routeCfg.path && _routeCfg.path.indexOf('http') !== 0) {
+          if (_routeCfg.path === SEP) {
+            _routeCfg.path = basePath;
+            _routeCfg.resolvePath = baseName;
+          } else {
+            if (_routeCfg.path[0] === SEP) {
+              _routeCfg.path = basePath + _routeCfg.path;
+              _routeCfg.resolvePath = baseName + _routeCfg.resolvePath;
+              if (_routeCfg.path[0] !== SEP) {
+                _routeCfg.path = SEP + _routeCfg.path;
               }
+            } else {
+              _routeCfg.path = baseName + SEP + _routeCfg.path;
+              _routeCfg.resolvePath = baseName + SEP + _routeCfg.resolvePath;
             }
           }
         }
-      } else {
-        history = component._withBasename(baseName);
       }
-      class newComponent extends React.PureComponent {
-        render() {
-          return (<IProvider store={component.getStore()}>
-            <Router history={history} routes={component._setting.routes} />
-          </IProvider>);
-        }
+    } else {
+      history = appComponent._withBasename(baseName);
+    }
+    class newComponent extends React.PureComponent {
+      static routeOptions = appComponent.routeOptions || {};
+      render() {
+        return (<IProvider store={appComponent.getStore()}>
+          <Router history={history} routes={appComponent._setting.routes} />
+        </IProvider>);
       }
-      newComponent.routeOptions = component.routeOptions || {};
-      routeConfig.component = newComponent;
+    }
+    return newComponent;
+  }
+  _parseRoute(routeConfig, strict) {
+    // #! 如果设置路由是一个子App
+    const basePath = routeConfig.path || routeConfig.name;
+    if (routeConfig.component) {
+      routeConfig.component = Beatle.fromLazy(routeConfig.component);
+      if (routeConfig.component instanceof Beatle) {
+        routeConfig.path = basePath + '(/**)';
+        routeConfig.component = this._convertAppToComponent(routeConfig.component, basePath);
+      }
+    } else if (routeConfig.getComponent && routeConfig.app) {
       routeConfig.path = basePath + '(/**)';
-    } else if (strict && !routeConfig.component.routeOptions) {
+      const getComponent = routeConfig.getComponent;
+      routeConfig.getComponent = (nextState, callback) => {
+        const newCallback = (err, app) => {
+          if (err) {
+            callback(err, app);
+          } else {
+            callback(null, this._convertAppToComponent(app, basePath))
+          }
+        };
+        getComponent(nextState, newCallback);
+      };
+    }  else if (strict && !routeConfig.component.routeOptions) {
       routeConfig = false;
     }
 
@@ -311,7 +329,7 @@ export default class Beatle {
     return this._setting.routes;
   }
 
-  setRoutes(routes, isAssign, parent) {
+  setRoutes(routes, isAssign, parent, opt) {
     if (Array.isArray(routes)) {
       // 路由配置为数组时，实际上是react-router的路由配置
       if (isAssign) {
@@ -323,19 +341,16 @@ export default class Beatle {
         if (isAssign === false) {
           this._pushRoute(this._setting.routes, item, parent);
         }
-        if (item.component) {
-          item.component = Beatle.fromLazy(item.component, this);
-          if (item.component.routeOptions) {
-            Object.assign(item, item.component.routeOptions);
-          }
+        item = this._parseRoute(item);
+        if (item.component && item.component.routeOptions) {
+          Object.assign(item, item.component.routeOptions);
         }
-        this._setting.routesMap[this.getResolvePath(item, true)] = item;
         if (item.childRoutes) {
           this.setRoutes(item.childRoutes, null, item);
         }
       });
     } else {
-      this.routesFactory(routes);
+      this.routesFactory(routes, opt);
     }
   }
 
