@@ -228,11 +228,11 @@ export default class Beatle {
     }
     return path;
   }
-  _convertAppToComponent(appComponent, basePath) {
+  _convertAppToComponent(appComponent, basePath, routeType) {
     const self = this;
     const baseName = basePath[0] === '/' ? basePath : self._setting.basePath + SEP + basePath;
     const IProvider = getProvider(appComponent.injector, appComponent.globalInjector);
-    let history = appComponent._setting.history;
+    let history = Object(routeType) === routeType ? routeType : historys[routeType] || appComponent._setting.history;
     let key;
     let _routeCfg;
     // 相同路由下增加路径
@@ -280,7 +280,7 @@ export default class Beatle {
       routeConfig.component = Beatle.fromLazy(routeConfig.component);
       if (routeConfig.component instanceof Beatle) {
         routeConfig.path = basePath + '(/**)';
-        routeConfig.component = this._convertAppToComponent(routeConfig.component, basePath);
+        routeConfig.component = this._convertAppToComponent(routeConfig.component, basePath, routeConfig.routeType);
       }
     } else if (routeConfig.getComponent && routeConfig.app) {
       routeConfig.path = basePath + '(/**)';
@@ -290,7 +290,7 @@ export default class Beatle {
           if (err) {
             callback(err, app);
           } else {
-            callback(null, this._convertAppToComponent(app, basePath))
+            callback(null, this._convertAppToComponent(app, basePath, routeConfig.routeType));
           }
         };
         getComponent(nextState, newCallback);
