@@ -230,39 +230,44 @@ export default class Beatle {
   }
   _convertAppToComponent(appComponent, basePath, routeType) {
     const self = this;
-    const baseName = basePath[0] === '/' ? basePath : self._setting.basePath + SEP + basePath;
-    const IProvider = getProvider(appComponent.injector, appComponent.globalInjector);
-    let history = Object(routeType) === routeType ? routeType : historys[routeType] || appComponent._setting.history;
-    let key;
-    let _routeCfg;
-    // 相同路由下增加路径
-    if (self._setting.history === history) {
-      appComponent._setting.basePath = ''; // this._setting.basePath;
-      appComponent._setting.parentPath = this._setting.basePath;
-      for (key in appComponent._setting.routesMap) {
-        _routeCfg = appComponent._setting.routesMap[key];
-        // delete _routeCfg.resolvePath;
-        if (_routeCfg.path && _routeCfg.path.indexOf('http') !== 0) {
-          if (_routeCfg.path === SEP) {
-            _routeCfg.path = basePath;
-            _routeCfg.resolvePath = baseName;
-          } else {
-            if (_routeCfg.path[0] === SEP) {
-              _routeCfg.path = basePath + _routeCfg.path;
-              _routeCfg.resolvePath = baseName + _routeCfg.resolvePath;
-              if (_routeCfg.path[0] !== SEP) {
-                _routeCfg.path = SEP + _routeCfg.path;
-              }
+    if (!appComponent.parent) {
+      appComponent.parent = self;
+      const baseName = basePath[0] === '/' ? basePath : self._setting.basePath + SEP + basePath;
+      appComponent._setting.history = Object(routeType) === routeType ? routeType : historys[routeType] || appComponent._setting.history;
+      let key;
+      let _routeCfg;
+      // 相同路由下增加路径
+      if (self._setting.history === appComponent._setting.history) {
+        appComponent._setting.basePath = ''; // this._setting.basePath;
+        appComponent.parent = self;
+        for (key in appComponent._setting.routesMap) {
+          _routeCfg = appComponent._setting.routesMap[key];
+          // delete _routeCfg.resolvePath;
+          if (_routeCfg.path && _routeCfg.path.indexOf('http') !== 0) {
+            if (_routeCfg.path === SEP) {
+              _routeCfg.path = basePath;
+              _routeCfg.resolvePath = baseName;
             } else {
-              _routeCfg.path = baseName + SEP + _routeCfg.path;
-              _routeCfg.resolvePath = baseName + SEP + _routeCfg.resolvePath;
+              if (_routeCfg.path[0] === SEP) {
+                _routeCfg.path = basePath + _routeCfg.path;
+                _routeCfg.resolvePath = baseName + _routeCfg.resolvePath;
+                if (_routeCfg.path[0] !== SEP) {
+                  _routeCfg.path = SEP + _routeCfg.path;
+                }
+              } else {
+                _routeCfg.path = baseName + SEP + _routeCfg.path;
+                _routeCfg.resolvePath = baseName + SEP + _routeCfg.resolvePath;
+              }
             }
           }
         }
+      } else {
+        appComponent._setting.history = appComponent._withBasename(baseName);
       }
-    } else {
-      history = appComponent._withBasename(baseName);
     }
+    const IProvider = getProvider(appComponent.injector, appComponent.globalInjector);
+    const history = appComponent._setting.history;
+
     class newComponent extends React.PureComponent {
       static routeOptions = appComponent.routeOptions || {};
       render() {
@@ -275,15 +280,21 @@ export default class Beatle {
   }
   _parseRoute(routeConfig, strict) {
     // #! 如果设置路由是一个子App
-    const basePath = routeConfig.path || routeConfig.name;
+    let parent = routeConfig;
+    const paths = [];
+    while (parent) {
+      paths.unshift(parent.path);
+      parent = parent.parent;
+    }
+    const basePath = paths.join(SEP);
     if (routeConfig.component) {
       routeConfig.component = Beatle.fromLazy(routeConfig.component);
       if (routeConfig.component instanceof Beatle) {
-        routeConfig.path = basePath + '(/**)';
+        routeConfig.path = routeConfig.path + '(/**)';
         routeConfig.component = this._convertAppToComponent(routeConfig.component, basePath, routeConfig.routeType);
       }
     } else if (routeConfig.getComponent && routeConfig.app) {
-      routeConfig.path = basePath + '(/**)';
+      routeConfig.path = routeConfig.path + '(/**)';
       const getComponent = routeConfig.getComponent;
       routeConfig.getComponent = (nextState, callback) => {
         const newCallback = (err, app) => {
