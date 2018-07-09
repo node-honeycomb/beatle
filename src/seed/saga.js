@@ -47,7 +47,7 @@ export default class Saga {
           if (model.effects[actionName]) {
             // 得出resolve 和 reject交付给saga，不再往下走
             return this._getWatchPromise(action.type);
-          } else if (model._actions[actionName]) {
+          } else if (action.name && model._actions[actionName]) {
             return model._actions[actionName].apply(model, action.payload && action.payload.arguments)(model.dispatch);
           } else {
             return next(action);
