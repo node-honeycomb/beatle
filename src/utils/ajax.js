@@ -240,6 +240,8 @@ export default class Ajax {
     } else {
       extraOption.url = this._formatQuery(ajaxOptions, true);
     }
+    delete ajaxOptions.data;
+    delete ajaxOptions.params;
 
     /**
      * ### 常用配置

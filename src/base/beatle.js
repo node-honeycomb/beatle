@@ -707,7 +707,7 @@ export default class Beatle {
     return ReduxSeed.getRedux(this._setting.seedName).store.dispatch;
   }
 
-  connect(models, SceneComponent, flattern) {
+  connect(models, SceneComponent, flattern, props) {
     /**
      * ### connect模块来实现绑定
      *
@@ -758,7 +758,7 @@ export default class Beatle {
         models = [];
       }
     }
-    return connect(this.toBindings([].concat(models), flattern), this.dispatch.bind(this))(SceneComponent);
+    return connect(this.toBindings([].concat(models), flattern), this.dispatch.bind(this), props)(SceneComponent);
   }
 
   toBindings(bindings, flattern, context) {

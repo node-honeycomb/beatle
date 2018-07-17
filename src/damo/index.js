@@ -164,8 +164,9 @@ export default function enhanceBeatle(Beatle) {
       this.injector.setServices(providers);
     }
 
-    view(selector, SceneComponent, providers, bindings, hookActions) {
+    view(selector, SceneComponent, providers, bindings, hookActions, props) {
       if (selector && selector.prototype && selector.prototype.isReactComponent) {
+        props = hookActions;
         hookActions = bindings;
         bindings = providers;
         providers = SceneComponent;
@@ -182,16 +183,18 @@ export default function enhanceBeatle(Beatle) {
         if (Object(selector) === selector) {
           bindings = selector.bindings;
           hookActions = selector.hookActions;
+        } else {
+          bindings = bindings || selector;
         }
         selector = new BaseSelector();
-        selector.bindings = [].concat(bindings || selector || '');
+        selector.bindings = [].concat(bindings || '');
         selector.hookActions = hookActions;
       }
       if (selector.bindings) {
         Object.assign(selector, this.toBindings(selector.bindings, selector.flattern, selector));
       }
       // #! 绑定组件, 连接到redux
-      SceneComponent = connect(selector, this.dispatch.bind(this))(SceneComponent);
+      SceneComponent = connect(selector, this.dispatch.bind(this), props)(SceneComponent);
       // #! 额外注入context到组件中
 
       selector.getModel = (name) => {

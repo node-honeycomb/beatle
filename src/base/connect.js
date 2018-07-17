@@ -1,7 +1,7 @@
 import {connect} from 'react-redux';
 
-function deepMerge(a, b, extra) {
-  const obj = {};
+function deepMerge(a, b, extra, obj) {
+  obj = Object.assign({}, obj);
   for (let key in a) {
     if (Object(a[key]) === a[key] && Object(b[key]) === b[key]) {
       obj[key] = Object.assign({}, a[key], b[key]);
@@ -28,13 +28,13 @@ function deepMerge(a, b, extra) {
  * + bindings绑定的数据和方法，以数据模型名称在props下增加一层属性名，需要把connect的属性合并改为深度合并
  * + context主要生成的react-context
  */
-export default function viewConnect(instance, dispatch) {
+export default function viewConnect(instance, dispatch, props = {}) {
   function mergeProps(stateProps, dispatchProps, parentProps) {
     let nextProps;
     if (instance.flattern) {
-      nextProps = Object.assign({}, stateProps, dispatchProps, parentProps);
+      nextProps = Object.assign({}, props, stateProps, dispatchProps, parentProps);
     } else {
-      nextProps = deepMerge(stateProps, dispatchProps, parentProps);
+      nextProps = deepMerge(stateProps, dispatchProps, parentProps, props);
     }
     nextProps.dispatch = dispatch;
     return nextProps;
