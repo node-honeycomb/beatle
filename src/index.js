@@ -9,7 +9,6 @@ import modelChecker from './base/model';
 import resourceChecker from './base/resource';
 import warning from 'fbjs/lib/warning';
 import messages from './core/messages';
-import history from 'history';
 /**
  * ### 提供Link标签，对react-router的Link标签做了Hoc
  *
@@ -261,15 +260,16 @@ const BeatlePro = enhancleBeatle(Beatle);
 
 ['push', 'replace', 'go', 'goBack', 'goForward'].forEach(method => {
   BeatlePro.prototype[method] = function (path, state) {
+    if (!this._activeHistory) return;
     if (typeof path === 'string') {
       const routeConfig = this.route(path);
       path = this.getResolvePath(routeConfig);
     }
-    history[method](path, state);
+    this._activeHistory[method](path, state);
   };
 });
 
-BeatlePro.prototype.version = '1.0.4';
+BeatlePro.prototype.version = '1.0.7';
 module.exports = BeatlePro;
 
 export default BeatlePro;

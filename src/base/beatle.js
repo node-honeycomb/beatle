@@ -182,6 +182,14 @@ export default class Beatle {
     });
   }
 
+  get appName() {
+    return this._setting.appName;
+  }
+
+  get basename() {
+    return this._setting.basePath;
+  }
+
   /**
    * ### 内部的方法，不对外开放
    *
@@ -189,7 +197,7 @@ export default class Beatle {
    * |: ------ |: ------ |: ------ |
    * | _getMiddleWareFactory() `void` | N/A | 构建一个redux中间件，把所有Beatle的中间组装进去 |
    * | _withBasename(basePath) `Object` | basePath `String` | 生成带有根路径的路由处理对象 |
-   * | _parseRoute(routeConfig) `Object` | routeConfig `Object` | 处理路由，app转路由也在这处理，并且添加到routesMap |
+   * | parseRoute(routeConfig) `Object` | routeConfig `Object` | 处理路由，app转路由也在这处理，并且添加到routesMap |
    */
 
   _getMiddleWareFactory() {
@@ -262,7 +270,7 @@ export default class Beatle {
           }
         }
       } else {
-        appComponent._setting.history = appComponent._withBasename(baseName);
+        appComponent._activeHistory = appComponent._setting.history = appComponent._withBasename(baseName);
       }
     }
     const IProvider = getProvider(appComponent.injector, appComponent.globalInjector);
@@ -271,6 +279,9 @@ export default class Beatle {
     class newComponent extends React.PureComponent {
       static routeOptions = appComponent.routeOptions || {};
       render() {
+        if (!appComponent._activeHistory) {
+          appComponent._activeHistory = self._activeHistory;
+        }
         return (<IProvider store={appComponent.getStore()}>
           <Router history={history} routes={appComponent._setting.routes} />
         </IProvider>);
@@ -278,7 +289,7 @@ export default class Beatle {
     }
     return newComponent;
   }
-  _parseRoute(routeConfig, strict) {
+  parseRoute(routeConfig, strict) {
     // #! 如果设置路由是一个子App
     let parent = routeConfig;
     const paths = [];
@@ -352,7 +363,7 @@ export default class Beatle {
         if (isAssign === false) {
           this._pushRoute(this._setting.routes, item, parent);
         }
-        item = this._parseRoute(item);
+        item = this.parseRoute(item);
         if (item.component && item.component.routeOptions) {
           Object.assign(item, item.component.routeOptions);
         }
@@ -530,7 +541,7 @@ export default class Beatle {
         }
       }
       const childRoute = route(path, RouteComponent, {
-        callback: this._parseRoute.bind(this)
+        callback: this.parseRoute.bind(this)
       });
       if (childRoute) {
         this._pushRoute(this._setting.routes, childRoute);
@@ -551,7 +562,7 @@ export default class Beatle {
         callback: option
       };
     }
-    const routeCallback = option.callback || this._parseRoute.bind(this);
+    const routeCallback = option.callback || this.parseRoute.bind(this);
     const leave = option.leave || 1;
     if (option.strict === undefined) {
       option.strict = true;
@@ -914,10 +925,10 @@ export default class Beatle {
     const routes = this._setting.routes;
     rootDom = rootDom || this._setting.rootDom;
     basePath = basePath || this._setting.basePath;
-
+    this._activeHistory = this._withBasename(basePath);
     const IProvider = getProvider(this.injector, this.globalInjector);
     const appElement = (<IProvider store={this.getStore()}>
-      <IRouter history={this._withBasename(basePath)} routes={routes} />
+      <IRouter history={this._activeHistory} routes={routes} />
     </IProvider>);
     if (renderCb) {
       renderCb(appElement, rootDom);

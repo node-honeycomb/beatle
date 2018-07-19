@@ -93,7 +93,7 @@ export default function enhanceBeatle(Beatle) {
         return obj;
       }
     }
-    
+
     observer(originData, Com) {
       if (Com) {
         return this.connect(originData, Com, isPlainObject(originData));
@@ -165,41 +165,43 @@ export default function enhanceBeatle(Beatle) {
     }
 
     view(selector, SceneComponent, providers, bindings, hookActions, props) {
-      if (selector && selector.prototype && selector.prototype.isReactComponent) {
-        props = hookActions;
-        hookActions = bindings;
-        bindings = providers;
-        providers = SceneComponent;
-        SceneComponent = selector;
-        selector = null;
-      }
-      // #! selector实例
-      if (selector && selector.prototype instanceof BaseSelector) {
-        selector.displayName = selector.displayName || guid('selector');
-        selector = this.injector.instantiate(selector);
-        selector.bindings = selector.bindings || bindings;
-        selector.hookActions = selector.hookActions || hookActions;
-      } else {
-        if (Object(selector) === selector) {
-          bindings = selector.bindings;
-          hookActions = selector.hookActions;
-        } else {
-          bindings = bindings || selector;
+      if (selector !== false) {
+        if (selector && selector.prototype && selector.prototype.isReactComponent) {
+          props = hookActions;
+          hookActions = bindings;
+          bindings = providers;
+          providers = SceneComponent;
+          SceneComponent = selector;
+          selector = null;
         }
-        selector = new BaseSelector();
-        selector.bindings = [].concat(bindings || '');
-        selector.hookActions = hookActions;
-      }
-      if (selector.bindings) {
-        Object.assign(selector, this.toBindings(selector.bindings, selector.flattern, selector));
-      }
-      // #! 绑定组件, 连接到redux
-      SceneComponent = connect(selector, this.dispatch.bind(this), props)(SceneComponent);
-      // #! 额外注入context到组件中
+        // #! selector实例
+        if (selector && selector.prototype instanceof BaseSelector) {
+          selector.displayName = selector.displayName || guid('selector');
+          selector = this.injector.instantiate(selector);
+          selector.bindings = selector.bindings || bindings;
+          selector.hookActions = selector.hookActions || hookActions;
+        } else {
+          if (Object(selector) === selector) {
+            bindings = selector.bindings;
+            hookActions = selector.hookActions;
+          } else {
+            bindings = bindings || selector;
+          }
+          selector = new BaseSelector();
+          selector.bindings = [].concat(bindings || '');
+          selector.hookActions = hookActions;
+        }
+        if (selector.bindings) {
+          Object.assign(selector, this.toBindings(selector.bindings, selector.flattern, selector));
+        }
+        // #! 绑定组件, 连接到redux
+        SceneComponent = connect(selector, this.dispatch.bind(this), props)(SceneComponent);
+        // #! 额外注入context到组件中
 
-      selector.getModel = (name) => {
-        return this.model(name);
-      };
+        selector.getModel = (name) => {
+          return this.model(name);
+        };
+      }
 
       return service(providers, SceneComponent, {
         injector: this.injector,
