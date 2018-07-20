@@ -924,8 +924,8 @@ export default class Beatle {
 
     const routes = this._setting.routes;
     rootDom = rootDom || this._setting.rootDom;
-    basePath = basePath || this._setting.basePath;
-    this._activeHistory = this._withBasename(basePath);
+    this._setting.basePath = basePath || this._setting.basePath;
+    this._activeHistory = this._withBasename(this._setting.basePath);
     const IProvider = getProvider(this.injector, this.globalInjector);
     const appElement = (<IProvider store={this.getStore()}>
       <IRouter history={this._activeHistory} routes={routes} />
