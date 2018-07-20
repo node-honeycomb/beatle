@@ -104,6 +104,7 @@ const crud = {
     pageSize: 10,
     page: 1
   },
+  list: [],
   reset: (nextState, payload, initialState) => {
     return initialState;
   },

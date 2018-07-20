@@ -20,7 +20,7 @@ export default function configureStore(initialState = {}, middlewares = [], redu
   const sagaMiddleware = createSagaMiddleware();
 
   const composeEnhancers = window.__REDUX_DEVTOOLS_EXTENSION_COMPOSE__ || compose;
-  const enhancer = composeEnhancers(applyMiddleware(thunk, sagaMiddleware, createLogger({level: 'info', collapsed: true}), ...middlewares), window.__REDUX_DEVTOOLS_EXTENSION__ && window.__REDUX_DEVTOOLS_EXTENSION__());
+  const enhancer = composeEnhancers(applyMiddleware(thunk, sagaMiddleware, createLogger({level: 'info', collapsed: true}), ...middlewares));
 
   const store = createStore(rootReducer, initialState, enhancer);
   store.runSaga = sagaMiddleware.run;
