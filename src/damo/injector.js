@@ -125,13 +125,13 @@ export default class Injector {
     }
   }
 
-  instantiate(provider, getService) {
+  instantiate(provider, name, getService) {
     // + Check if Type is annotated and use just the given function at n-1 as
     // parameter  e.g. someModule.factory('greeter', ['$window',
     // function(renamed$window) {}]);  > Object creation:
     // http://jsperf.com/create-constructor/2
     const instance = Object.create(provider.prototype || null);
-    const returnedValue = invoke(provider, provider.displayName, (name) => {
+    const returnedValue = invoke(provider, name || provider.displayName, (name) => {
       const service = getService && getService(name);
       if (service) {
         return service;
@@ -153,7 +153,7 @@ export default class Injector {
   setService(Service) {
     const name = Service.displayName;
     if (name) {
-      this._services[name] = this.instantiate(Service);
+      this._services[name] = this.instantiate(Service, name);
     } else if (Array.isArray(Service) || isPlainObject(Service)) {
       this.setServices(Service);
     } else {
