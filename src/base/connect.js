@@ -31,6 +31,9 @@ function deepMerge(a, b, extra, obj) {
 export default function viewConnect(instance, dispatch, props = {}) {
   function mergeProps(stateProps, dispatchProps, parentProps) {
     let nextProps;
+    if (props.getProps) {
+      Object.assign(props, props.getProps(parentProps));
+    }
     if (instance.flattern) {
       nextProps = Object.assign({}, props, stateProps, dispatchProps, parentProps);
     } else {

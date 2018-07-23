@@ -218,11 +218,7 @@ export default class Ajax {
       ajaxOptions.data = {};
     }
     ajaxOptions.data = Object.assign({}, ajaxOptions.data);
-    if (ajaxOptions.headers) {
-      Object.assign(ajaxOptions.headers, this.set('headers'));
-    } else {
-      ajaxOptions.headers = this.set('headers');
-    }
+    
     // 替换字符串变量
     this._substitute(ajaxOptions);
 
@@ -232,6 +228,12 @@ export default class Ajax {
     const credential = ajaxOptions.credential || 'same-origin';
     const extraOption = {};
     const defaultHeaders = {};
+
+    if (ajaxOptions.headers) {
+      Object.assign(ajaxOptions.headers, this.set('headers'));
+    } else {
+      ajaxOptions.headers = this.set('headers');
+    }
 
     if (isJsonHeader || !(ajaxOptions.method === 'GET' || ajaxOptions.method === 'DELETE')) {
       extraOption.body = JSON.stringify(ajaxOptions.data);
