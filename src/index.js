@@ -269,7 +269,7 @@ const BeatlePro = enhancleBeatle(Beatle);
   };
 });
 
-BeatlePro.prototype.version = '1.1.10';
+BeatlePro.prototype.version = '1.1.12';
 module.exports = BeatlePro;
 
 export default BeatlePro;
