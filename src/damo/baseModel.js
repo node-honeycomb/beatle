@@ -16,12 +16,16 @@ export const exec = (name, feedback) => (model, method, descriptor) => {
     if (feedback) {
       args.push(feedback);
     }
-    return this.setState({
-      [name]: {
-        exec: method,
-        callback: callback
-      }
-    }, ...args);
+    if (name) {
+      return this.setState({
+        [name]: {
+          exec: method,
+          callback: callback
+        }
+      }, ...args);
+    } else {
+      return this.execute(method, callback, ...args);
+    }
   };
   return descriptor;
 };

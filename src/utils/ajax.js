@@ -170,8 +170,8 @@ export default class Ajax {
     const normalize = ajaxOptions.normalize || this.set('normalize');
     ajaxOptions.originUrl = ajaxOptions.url;
     if (mutable && normalize) {
-      ajaxOptions.data = Object.assign({}, ajaxOptions.data);
-      ajaxOptions.url = substitute(ajaxOptions.url, ajaxOptions.data, true, delimeter);
+      const data = Object.assign({}, ajaxOptions.data);
+      ajaxOptions.url = substitute(ajaxOptions.url, data, true, delimeter);
     } else if (ajaxOptions.params) {
       ajaxOptions.url = substitute(ajaxOptions.url, ajaxOptions.params, false, delimeter);
     }
@@ -214,17 +214,21 @@ export default class Ajax {
     } else {
       ajaxOptions.method = 'GET';
     }
-    const mutable = ['formData'].indexOf(ajaxOptions.dataType) === -1;
-    // 替换字符串变量
-    this._substitute(ajaxOptions, mutable);
 
-    const isJsonHeader = ajaxOptions.headers && ajaxOptions.headers['Content-Type'] && ajaxOptions
-      .headers['Content-Type']
-      .indexOf('application/json') > -1;
+    const iHeaders = {};
+    const mutable = isPlainObject(ajaxOptions.data);
+    // 替换字符串变量，只有header不填
+    this._substitute(ajaxOptions, mutable);
+    // 如果没有指定headers，则把默认的header合并进来
+    if (!ajaxOptions.headers) {
+      Object.assign(iHeaders, this.set('headers'));
+    }
+    // headers是否存在json处理
+    const isJsonHeader = iHeaders['Content-Type'] && iHeaders['Content-Type'].indexOf('application/json') > -1;
+
     const credential = ajaxOptions.credential || 'same-origin';
     const extraOption = {};
-    const iHeaders = {};
-
+    // 如果存在json处理，或者method不为GET、DELETE
     if (isJsonHeader || !(ajaxOptions.method === 'GET' || ajaxOptions.method === 'DELETE')) {
       if (mutable) {
         extraOption.data = JSON.stringify(ajaxOptions.data);
@@ -242,9 +246,6 @@ export default class Ajax {
     delete ajaxOptions.data;
     delete ajaxOptions.params;
 
-    if (!ajaxOptions.headers) {
-      ajaxOptions.headers = Object.assign({}, this.set('headers'));
-    }
     /**
      * ### 常用配置
      *
