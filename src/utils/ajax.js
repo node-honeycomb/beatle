@@ -165,11 +165,11 @@ export default class Ajax {
     }
   }
 
-  _substitute(ajaxOptions) {
+  _substitute(ajaxOptions, mutable) {
     const delimeter = this.set('delimeter');
     const normalize = ajaxOptions.normalize || this.set('normalize');
     ajaxOptions.originUrl = ajaxOptions.url;
-    if (normalize) {
+    if (mutable && normalize) {
       ajaxOptions.data = Object.assign({}, ajaxOptions.data);
       ajaxOptions.url = substitute(ajaxOptions.url, ajaxOptions.data, true, delimeter);
     } else if (ajaxOptions.params) {
@@ -214,37 +214,37 @@ export default class Ajax {
     } else {
       ajaxOptions.method = 'GET';
     }
-    if (!ajaxOptions.data) {
-      ajaxOptions.data = {};
-    }
-    ajaxOptions.data = Object.assign({}, ajaxOptions.data);
-    
+    const mutable = ['formData'].indexOf(ajaxOptions.dataType) === -1;
     // 替换字符串变量
-    this._substitute(ajaxOptions);
+    this._substitute(ajaxOptions, mutable);
 
     const isJsonHeader = ajaxOptions.headers && ajaxOptions.headers['Content-Type'] && ajaxOptions
       .headers['Content-Type']
       .indexOf('application/json') > -1;
     const credential = ajaxOptions.credential || 'same-origin';
     const extraOption = {};
-    const defaultHeaders = {};
-
-    if (ajaxOptions.headers) {
-      Object.assign(ajaxOptions.headers, this.set('headers'));
-    } else {
-      ajaxOptions.headers = this.set('headers');
-    }
+    const iHeaders = {};
 
     if (isJsonHeader || !(ajaxOptions.method === 'GET' || ajaxOptions.method === 'DELETE')) {
-      extraOption.body = JSON.stringify(ajaxOptions.data);
-      defaultHeaders['Content-Type'] = 'application/json; charset=utf-8';
+      if (mutable) {
+        extraOption.data = JSON.stringify(ajaxOptions.data);
+      } else {
+        extraOption.body = ajaxOptions.data;
+      }
+      if (!ajaxOptions.headers) {
+        iHeaders['Content-Type'] =  'application/json; charset=utf-8';
+      }
       extraOption.url = this._formatQuery(ajaxOptions);
     } else {
+      ajaxOptions.data = Object.assign({}, ajaxOptions.data);
       extraOption.url = this._formatQuery(ajaxOptions, true);
     }
     delete ajaxOptions.data;
     delete ajaxOptions.params;
 
+    if (!ajaxOptions.headers) {
+      ajaxOptions.headers = Object.assign({}, this.set('headers'));
+    }
     /**
      * ### 常用配置
      *
@@ -261,7 +261,7 @@ export default class Ajax {
      */
     return Object.assign(ajaxOptions, {
       credentials: credential,
-      headers: Object.assign(defaultHeaders, ajaxOptions.headers)
+      headers: Object.assign({}, ajaxOptions.headers, iHeaders)
     }, extraOption);
   }
 
