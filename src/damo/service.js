@@ -80,7 +80,7 @@ export default function service(providers, Component, {injector, globalInjector,
                 model = typeof action.model === 'string' ? selector.getModel(action.model) : action.model;
               }
               if (model && model[action.name]) {
-                model[action.name](action.getParams ? action.getParams(this.props) : action.params);
+                model[action.name](action.getParams ? action.getParams(this.props, this.context) : action.params);
               }
             });
           }
@@ -114,5 +114,9 @@ export default function service(providers, Component, {injector, globalInjector,
       }
     }
   }
+  NewComponent.contextTypes =  Object.assign(NewComponent.contextTypes, {
+    router: PropTypes.object,
+    location: PropTypes.object
+  });
   return NewComponent;
 }
