@@ -216,7 +216,7 @@ export default class Ajax {
     }
 
     const iHeaders = {};
-    const mutable = ajaxOptions.data === undefined || isPlainObject(ajaxOptions.data);
+    const mutable = ajaxOptions.mutable === false ? false : (ajaxOptions.data === undefined || isPlainObject(ajaxOptions.data));
     // 替换字符串变量，只有header不填
     this._substitute(ajaxOptions, mutable);
     // 如果没有指定headers，则把默认的header合并进来

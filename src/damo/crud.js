@@ -105,6 +105,7 @@ const crud = {
     page: 1
   },
   list: [],
+  noop: () => {},
   reset: (nextState, payload, initialState) => {
     return initialState;
   },
