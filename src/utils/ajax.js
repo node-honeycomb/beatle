@@ -231,7 +231,7 @@ export default class Ajax {
     // 如果存在json处理，或者method不为GET、DELETE
     if (isJsonHeader || !(ajaxOptions.method === 'GET' || ajaxOptions.method === 'DELETE')) {
       if (mutable) {
-        extraOption.data = JSON.stringify(ajaxOptions.data);
+        extraOption.body = JSON.stringify(ajaxOptions.data);
       } else {
         extraOption.body = ajaxOptions.data;
       }
@@ -240,7 +240,6 @@ export default class Ajax {
       }
       extraOption.url = this._formatQuery(ajaxOptions);
     } else {
-      ajaxOptions.data = Object.assign({}, ajaxOptions.data);
       extraOption.url = this._formatQuery(ajaxOptions, true);
     }
     delete ajaxOptions.data;
