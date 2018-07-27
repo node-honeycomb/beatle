@@ -21,6 +21,7 @@ const noop = (d) => d;
  * | headers | 全局的Header配置, 默认取值`window.ajaxHeader` |
  * | delimeter | 请求url默认支持插值替换，`delimeter`是插值变量的语法 |
  * | normalize | 请求url插值替换，是否都走data属性, 默认为`false` |
+ * | stringify | post request with JSON data in application/x-www-form-urlencoded, 默认为`false` |
  * | beforeRequest(ajaxOptions) | 请求之前的钩子函数 |
  * | beforeResponse(response, ajaxOptions, xhr) | 请求成功后处理response对象的钩子函数 |
  * | afterResponse(result, ajaxOptions, xhr) | 请求成功后处理接口结果数据的钩子函数 |
@@ -31,6 +32,8 @@ export default class Ajax {
   static delimeter = /:(\w+)/g;
   // #! 统一走data做过滤
   static normalize = false;
+
+  static stringify = false;
 
   static beforeRequest = noop;
   static afterResponse = noop;
@@ -152,13 +155,13 @@ export default class Ajax {
    */
   set(name, value) {
     if (Ajax[name] === undefined) {
-      warning(false, messages.invalidProp, 'set', name, 'headers, delimeter, normalize, beforeRequest, beforeResponse, afterResponse', 'Beatle.Ajax');
+      warning(false, messages.invalidProp, 'set', name, 'headers, delimeter, normalize, stringify, beforeRequest, beforeResponse, afterResponse', 'Beatle.Ajax');
     } else {
       if (value === undefined || value === null) {
         return this._setting[name] || Ajax[name];
       } else {
         if (this._setting[name]) {
-          warning(false, messages.duplicateProp, 'set', name, 'headers, delimeter, normalize, beforeRequest, beforeResponse, afterResponse', 'Beatle.Ajax');
+          warning(false, messages.duplicateProp, 'set', name, 'headers, delimeter, normalize, stringify, beforeRequest, beforeResponse, afterResponse', 'Beatle.Ajax');
         }
         this._setting[name] = value;
       }
@@ -228,15 +231,17 @@ export default class Ajax {
 
     const credential = ajaxOptions.credential || 'same-origin';
     const extraOption = {};
+    // see: https://github.com/github/fetch/issues/263
+    const stringify = ajaxOptions.stringify || this.set('stringify');
     // 如果存在json处理，或者method不为GET、DELETE
     if (isJsonHeader || !(ajaxOptions.method === 'GET' || ajaxOptions.method === 'DELETE')) {
       if (mutable) {
-        extraOption.body = JSON.stringify(ajaxOptions.data);
+        extraOption.body = stringify ? qs.stringify(ajaxOptions.data) : JSON.stringify(ajaxOptions.data);
+        if (!ajaxOptions.headers) {
+          iHeaders['Content-Type'] =  stringify ? 'application/x-www-form-urlencoded' : 'application/json; charset=utf-8';
+        }
       } else {
         extraOption.body = ajaxOptions.data;
-      }
-      if (!ajaxOptions.headers) {
-        iHeaders['Content-Type'] =  'application/json; charset=utf-8';
       }
       extraOption.url = this._formatQuery(ajaxOptions);
     } else {
@@ -244,7 +249,9 @@ export default class Ajax {
     }
     delete ajaxOptions.data;
     delete ajaxOptions.params;
-
+    delete ajaxOptions.stringify;
+    delete ajaxOptions.normalize;
+    delete ajaxOptions.mutable;
     /**
      * ### 常用配置
      *
