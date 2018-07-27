@@ -13,10 +13,10 @@ export const exec = (name, feedback) => (model, method, descriptor) => {
   const callback = descriptor.initializer ? descriptor.initializer() : descriptor.value;
   descriptor.initializer = undefined;
   descriptor.value = function (...args) {
-    if (feedback) {
-      args.push(feedback);
-    }
     if (name) {
+      if (feedback) {
+        args.push(feedback);
+      }
       return this.setState({
         [name]: {
           exec: method,
@@ -24,7 +24,17 @@ export const exec = (name, feedback) => (model, method, descriptor) => {
         }
       }, ...args);
     } else {
-      return this.execute(method, callback, ...args);
+      const promise = this.execute(method, callback, ...args);
+      promise.then(ret => {
+        if (feedback) {
+          feedback(null, ret);
+        }
+        return ret;
+      }, err => {
+        feedback && feedback(err);
+        return err;
+      });
+      return this.fromPromise(promise);
     }
   };
   return descriptor;
