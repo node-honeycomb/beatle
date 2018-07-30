@@ -183,13 +183,20 @@ export default class BaseModel {
       promises.push(this.execute.apply(this, args));
     }
 
-    const promise = Promise.all(promises);
-    promise.then(datas => {
-      const data = {};
+    let promise = Promise.all(promises);
+    promise = promise.then(datas => {
+      const keys = Object.keys(nextState);
+      let data;
       let i = 0;
-      for (let key in nextState) {
-        data[key] = datas[i++];
+      if (keys.length > 1) {
+        data = {};
+        keys.forEach(key => {
+          data[key] = datas[i++];
+        });
+      } else {
+        data = datas[i];
       }
+
       if (callback) {
         callback(null, data);
       }
