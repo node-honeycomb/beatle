@@ -21,7 +21,7 @@ export default function modelToReducer(model, initialState, isImmutable) {
        *
        * 而目前store直接交给副作用来填充，返回结果不可预测。也没有做校验，建议后期加上结构变更的校验。
        */
-      nextStore = reducer(prevStore, action.payload);
+      nextStore = reducer.call(model, prevStore, action.payload);
       // 当有返回值时，用返回值作为新的state, 否则使用prevStore对象。
       if (nextStore === undefined || nextStore instanceof StateObserver) {
         nextStore = prevStore.getStore();
