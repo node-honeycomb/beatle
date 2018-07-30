@@ -89,9 +89,9 @@ const crud = {
   message: (sucMsg, errMsg) => {
     return (err) => {
       if (err) {
-        crud.console.error(errMsg);
-      } else  {
-        crud.console.success(sucMsg);
+        errMsg && crud.console.error(errMsg, err.message);
+      } else {
+        sucMsg && crud.console.success(sucMsg);
       }
     };
   },
