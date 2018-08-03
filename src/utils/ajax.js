@@ -173,7 +173,7 @@ export default class Ajax {
     const normalize = ajaxOptions.normalize || this.set('normalize');
     ajaxOptions.originUrl = ajaxOptions.url;
     if (mutable && normalize) {
-      const data = Object.assign({}, ajaxOptions.data);
+      const data = isPlainObject(ajaxOptions.data) ? Object.assign({}, ajaxOptions.data) : ajaxOptions.data;
       ajaxOptions.url = substitute(ajaxOptions.url, data, true, delimeter);
     } else if (ajaxOptions.params) {
       ajaxOptions.url = substitute(ajaxOptions.url, ajaxOptions.params, false, delimeter);
