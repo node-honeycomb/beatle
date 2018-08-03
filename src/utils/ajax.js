@@ -222,12 +222,13 @@ export default class Ajax {
     const mutable = ajaxOptions.mutable === false ? false : (ajaxOptions.data === undefined || isPlainObject(ajaxOptions.data));
     // 替换字符串变量，只有header不填
     this._substitute(ajaxOptions, mutable);
+
+    // headers是否存在json处理
+    const isJsonHeader = iHeaders['Content-Type'] && iHeaders['Content-Type'].indexOf('application/json') > -1;
     // 如果没有指定headers，则把默认的header合并进来
     if (!ajaxOptions.headers) {
       Object.assign(iHeaders, this.set('headers'));
     }
-    // headers是否存在json处理
-    const isJsonHeader = iHeaders['Content-Type'] && iHeaders['Content-Type'].indexOf('application/json') > -1;
 
     const credential = ajaxOptions.credential || 'same-origin';
     const extraOption = {};

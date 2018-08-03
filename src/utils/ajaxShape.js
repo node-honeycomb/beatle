@@ -19,7 +19,7 @@ export default {
   method: propTypes.string,
   dataType: propTypes.string,
   params: propTypes.object,
-  data: propTypes.object,
+  data: propTypes.oneOfType([propTypes.object, propTypes.array]),
   headers: propTypes.object,
   callback: propTypes.func
 };
