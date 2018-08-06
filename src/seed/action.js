@@ -345,23 +345,8 @@ export function getProcessor(model, initialState, modelName, actionName, func, g
     return (dispatch) => {
       // 兼容之前副作用
       if (typeof func === 'function') {
-        const newFunc = function (nextState, payload) {
-          if (payload && Array.isArray(payload.arguments)) {
-            // #! 同步action
-            dispatch({
-              type: encodeActionType(modelName, actionName),
-              payload: {
-                data: null,
-                arguments: args,
-                store: initialState
-              }
-            });
-            return false;
-          } else {
-            return func.apply(model, arguments);
-          }
-        };
         let noDispatch = true;
+        let isReducer = true;
         const showDispatch = action => {
           if (noDispatch) {
             dispatch(action);
@@ -369,6 +354,7 @@ export function getProcessor(model, initialState, modelName, actionName, func, g
           }
         };
         const newDispatch = (action) => {
+          isReducer = false;
           if (action.type) {
             const [modelName, name] = decodeActionType(action.type);
             if (!name || !model.actions[modelName]) {
@@ -390,31 +376,43 @@ export function getProcessor(model, initialState, modelName, actionName, func, g
           showDispatch(action);
           return Promise.resolve(action.payload);
         };
-        const result = newFunc.apply(model, args.concat({
+        const result = func.apply(model, args.concat({
           put: newDispatch,
           select: (name, deep) => {
+            isReducer = false;
             const modelState = getState();
             warning(!modelState.hasOwnProperty || modelState.hasOwnProperty(name), messages.mergeWarning, 'select', name, modelName, 'Beatle.ReduxSeed');
             return Promise.resolve(modelState[name] && modelState[name].asMutable({deep: deep}));
           }
         }));
 
-        if (result && result.then) {
-          result.then((ret) => showDispatch({
-            type: model.ACTION_TYPE_IMMEDIATE,
-            payload: ret
-          }));
-          return result;
-        } else if (result === false) {
+        if (isReducer && result === undefined) {
+          // #! 同步action
+          dispatch({
+            type: encodeActionType(modelName, actionName),
+            payload: {
+              data: null,
+              arguments: args,
+              store: initialState
+            }
+          });
           return Promise.resolve(undefined);
         } else {
-          if (result) {
-            showDispatch({
+          if (result && result.then) {
+            result.then((ret) => showDispatch({
               type: model.ACTION_TYPE_IMMEDIATE,
-              payload: result
-            });
+              payload: ret
+            }));
+            return result;
+          } else {
+            if (result) {
+              showDispatch({
+                type: model.ACTION_TYPE_IMMEDIATE,
+                payload: result
+              });
+            }
+            return Promise.resolve(result);
           }
-          return Promise.resolve(result);
         }
       } else {
         // #! 同步action
