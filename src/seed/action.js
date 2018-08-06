@@ -344,7 +344,23 @@ export function getProcessor(model, initialState, modelName, actionName, func, g
   return (...args) => {
     return (dispatch) => {
       // 兼容之前副作用
-      if (typeof func === 'function' && func.toString().split(')')[0].split('(').pop().indexOf('payload') === -1) {
+      if (typeof func === 'function') {
+        const newFunc = function (nextState, payload) {
+          if (payload && Array.isArray(payload.arguments)) {
+            // #! 同步action
+            dispatch({
+              type: encodeActionType(modelName, actionName),
+              payload: {
+                data: null,
+                arguments: args,
+                store: initialState
+              }
+            });
+            return false;
+          } else {
+            return func.apply(model, arguments);
+          }
+        };
         let noDispatch = true;
         const showDispatch = action => {
           if (noDispatch) {
@@ -374,7 +390,7 @@ export function getProcessor(model, initialState, modelName, actionName, func, g
           showDispatch(action);
           return Promise.resolve(action.payload);
         };
-        const result = func.apply(model, args.concat({
+        const result = newFunc.apply(model, args.concat({
           put: newDispatch,
           select: (name, deep) => {
             const modelState = getState();
@@ -389,6 +405,8 @@ export function getProcessor(model, initialState, modelName, actionName, func, g
             payload: ret
           }));
           return result;
+        } else if (result === false) {
+          return Promise.resolve(undefined);
         } else {
           if (result) {
             showDispatch({
