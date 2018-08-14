@@ -1,4 +1,5 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 import enhancleBeatle from './damo/index';
 import Beatle from './base/beatle';
 import {Link} from 'react-router';
@@ -32,9 +33,12 @@ import messages from './core/messages';
  * ```
  */
 class BeatleLink extends React.PureComponent {
+  static contextTypes = {
+    app: PropTypes.object
+  }
   render() {
     const props = this.props;
-    const app = props.appName ? Beatle.getApp(props.appName) : Beatle.defaultApp;
+    const app = this.context.app;
     const route = typeof props.to === 'string' ? app.route(props.to) : null;
     let to = route && app.getResolvePath(route, true) || props.to;
     const query = Object.assign(props.query || {}, app._setting.query);
@@ -269,7 +273,7 @@ const BeatlePro = enhancleBeatle(Beatle);
   };
 });
 
-BeatlePro.prototype.version = '1.1.23';
+BeatlePro.prototype.version = '1.1.24';
 module.exports = BeatlePro;
 
 export default BeatlePro;
