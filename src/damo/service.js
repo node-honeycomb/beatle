@@ -80,7 +80,10 @@ export default function service(providers, Component, {injector, globalInjector,
                 model = typeof action.model === 'string' ? selector.getModel(action.model) : action.model;
               }
               if (model && model[action.name]) {
-                model[action.name](action.getParams ? action.getParams(this.props, this.context) : action.params);
+                const params = action.getParams ? action.getParams(this.props, this.context) : action.params;
+                if (params !== false) {
+                  model[action.name](params);
+                }
               }
             });
           }

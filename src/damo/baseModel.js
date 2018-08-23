@@ -13,7 +13,7 @@ export const exec = (name, feedback) => (model, method, descriptor) => {
   const callback = descriptor.initializer ? descriptor.initializer() : descriptor.value;
   descriptor.initializer = undefined;
   descriptor.value = function (...args) {
-    if (name) {
+    if (typeof name === 'string') {
       if (feedback) {
         args.push(feedback);
       }
@@ -24,7 +24,10 @@ export const exec = (name, feedback) => (model, method, descriptor) => {
         }
       }, ...args);
     } else {
-      const promise = this.execute(method, callback, ...args);
+      const newCallback = (nextStore, payload) => {
+        return callback(nextStore, payload, this._initialState, nextStore, {});
+      };
+      const promise = this.execute(method, newCallback, ...args);
       promise.then(ret => {
         if (feedback) {
           feedback(null, ret);
