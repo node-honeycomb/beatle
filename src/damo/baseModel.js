@@ -27,7 +27,7 @@ export const exec = (name, feedback) => (model, method, descriptor) => {
       const newCallback = (nextStore, payload) => {
         return callback(nextStore, payload, this._initialState, nextStore, {});
       };
-      const promise = this.execute(method, newCallback, ...args);
+      const promise = this.execute(method, newCallback, name === false, ...args);
       promise.then(ret => {
         if (feedback) {
           feedback(null, ret);
@@ -181,6 +181,7 @@ export default class BaseModel {
           break;
       }
       nextState[key].cid = this.id || 'id';
+      args.unshift(false);
       args.unshift(nextState[key]);
       args.unshift(nextState[key].name || key);
       promises.push(this.execute.apply(this, args));
@@ -224,7 +225,7 @@ export default class BaseModel {
     return promise;
   }
 
-  execute(name, action, ...args) {
+  execute(name, action, noDispatch, ...args) {
     if (!this._initialState) {
       this._initialState = cloneDeep(this.state);
     }
@@ -234,17 +235,19 @@ export default class BaseModel {
       action.callback = _callback || action.callback;
     }
     let processor;
+    let async;
     if (action.exec) {
-      processor = getProcessorByExec(this, this._initialState, this._name, name, action.exec, this.ajax);
-      setReducers(this, this._name, name, action, true);
+      processor = getProcessorByExec(this, this._initialState, this._name, name, action.exec, this.ajax, noDispatch);
+      async = true;
     } else if (action.isGenerator) {
-      processor = getProcessorByGenerator(this, this._initialState, this._name, name, this._saga);
-      setReducers(this, this._name, name, action);
+      processor = getProcessorByGenerator(this, this._initialState, this._name, name, this._saga, noDispatch);
     } else {
       processor = getProcessor(this, this._initialState, this._name, name, action, () => {
         return this.state;
-      });
-      setReducers(this, this._name, name, action);
+      }, noDispatch);
+    }
+    if (!noDispatch) {
+      setReducers(this, this._name, name, action, async);
     }
     return processor.apply(this, args)(this.dispatch);
   }

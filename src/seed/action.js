@@ -269,7 +269,7 @@ export function getActions({
 
 function noop() {}
 
-export function getProcessorByExec(model, initialState, modelName, actionName, exec, fetch) {
+export function getProcessorByExec(model, initialState, modelName, actionName, exec, fetch, noDispatch) {
   return (...args) => {
     return (dispatch) => {
       const statusMap = {
@@ -280,11 +280,11 @@ export function getProcessorByExec(model, initialState, modelName, actionName, e
 
       const promise = new Promise((resolve, reject) => {
         const errorCallback = function (error) {
-          dispatch({type: statusMap.error, error: true, payload: {data: undefined, store: initialState, arguments: args, message: error.message, exec: exec}});
+          !noDispatch && dispatch({type: statusMap.error, error: true, payload: {data: undefined, store: initialState, arguments: args, message: error.message, exec: exec}});
           reject(error);
         };
         const successCallback = function (data) {
-          dispatch({type: statusMap.success, payload: {data: data, store: initialState, arguments: args, exec: exec}});
+          !noDispatch && dispatch({type: statusMap.success, payload: {data: data, store: initialState, arguments: args, exec: exec}});
           resolve(data);
         };
 
@@ -316,39 +316,42 @@ export function getProcessorByExec(model, initialState, modelName, actionName, e
         return result;
       });
       // 添加一个promise，用于识别异步
-      dispatch({type: statusMap.start, payload: {data: undefined, store: initialState, arguments: args, exec: exec, promise: promise}});
+      !noDispatch && dispatch({type: statusMap.start, payload: {data: undefined, store: initialState, arguments: args, exec: exec, promise: promise}});
 
       return promise;
     };
   };
 }
 
-export function getProcessorByGenerator(model, initialState, modelName, actionName, saga) {
+export function getProcessorByGenerator(model, initialState, modelName, actionName, saga, noDispatch) {
   return (...args) => {
     return (dispatch) => {
-      const actionKey = typeToAction(modelName, actionName);
-      dispatch({
-        action: actionKey,
-        payload: {
-          arguments: args,
-          store: initialState
-        }
-      });
-      const type = encodeActionType(modelName, actionName);
-      return saga._getWatchPromise(type);
+      if (noDispatch) {
+        return model._actions[actionName].apply(model, ...args);
+      } else {
+        const actionKey = typeToAction(modelName, actionName);
+        dispatch({
+          action: actionKey,
+          payload: {
+            arguments: args,
+            store: initialState
+          }
+        });
+        const type = encodeActionType(modelName, actionName);
+        return saga._getWatchPromise(type);
+      }
     };
   };
 }
 
-export function getProcessor(model, initialState, modelName, actionName, func, getState) {
+export function getProcessor(model, initialState, modelName, actionName, func, getState, noDispatch) {
   return (...args) => {
     return (dispatch) => {
       // 兼容之前副作用
       if (typeof func === 'function') {
-        let noDispatch = true;
         let isReducer = true;
         const showDispatch = action => {
-          if (noDispatch) {
+          if (!noDispatch) {
             dispatch(action);
             noDispatch = true;
           }
@@ -376,15 +379,18 @@ export function getProcessor(model, initialState, modelName, actionName, func, g
           showDispatch(action);
           return Promise.resolve(action.payload);
         };
-        const result = func.apply(model, args.concat({
-          put: newDispatch,
-          select: (name, deep) => {
-            isReducer = false;
-            const modelState = getState();
-            warning(!modelState.hasOwnProperty || modelState.hasOwnProperty(name), messages.mergeWarning, 'select', name, modelName, 'Beatle.ReduxSeed');
-            return Promise.resolve(modelState[name] && modelState[name].asMutable({deep: deep}));
-          }
-        }));
+        if (!noDispatch) {
+          args = args.concat({
+            put: newDispatch,
+            select: (name, deep) => {
+              isReducer = false;
+              const modelState = getState();
+              warning(!modelState.hasOwnProperty || modelState.hasOwnProperty(name), messages.mergeWarning, 'select', name, modelName, 'Beatle.ReduxSeed');
+              return Promise.resolve(modelState[name] && modelState[name].asMutable({deep: deep}));
+            }
+          });
+        }
+        const result = func.apply(model, args);
 
         if (isReducer && result === undefined) {
           // #! 同步action
@@ -414,6 +420,8 @@ export function getProcessor(model, initialState, modelName, actionName, func, g
             return Promise.resolve(result);
           }
         }
+      } else if (noDispatch) {
+        return Promise.resolve(func && func.data);
       } else {
         // #! 同步action
         dispatch({
