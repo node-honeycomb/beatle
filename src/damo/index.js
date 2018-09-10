@@ -105,7 +105,7 @@ export default function enhanceBeatle(Beatle) {
         // #! 这里有问题，要通过store.subscribe来实现
         const store = this.seed.get('store');
         const str = originData;
-        const states = this.select(str);
+        let states = this.select(str);
         const eventName = guid('event');
         let unsubscribe;
         const trySubscribe = () => {
@@ -113,6 +113,8 @@ export default function enhanceBeatle(Beatle) {
           unsubscribe = store.subscribe(() => {
             const _states = this.select(str);
             if (Array.isArray(states) && states.filter((state, index) => !isEqual(state, _states[index])).length || !isEqual(_states, states)) {
+              // 第一次进来后，后续要判断新的变化才进来
+              states = _states;
               emitter.emit(eventName, _states && _states.asMutable ? _states.asMutable({deep: true}) : _states);
               trySubscribe();
             }
