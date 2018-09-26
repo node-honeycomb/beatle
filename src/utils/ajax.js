@@ -193,7 +193,7 @@ export default class Ajax {
       // 合并ajaxOptions.data到query，重复的key被data中的值替换
       u.query = Object.assign(u.query || {}, ajaxOptions.data);
       // 去除search属性，在format函数中，如果存在search，那么query解析为queryStr不被接收
-      const query = qs.stringify(u.query);
+      const query = qs.stringify(u.query, ajaxOptions.qsOption);
       u.search = (query && ('?' + query)) || '';
       delete u.query;
     }
@@ -237,7 +237,7 @@ export default class Ajax {
     // 如果存在json处理，或者method不为GET、DELETE
     if (isJsonHeader || !(ajaxOptions.method === 'GET' || ajaxOptions.method === 'DELETE')) {
       if (mutable) {
-        extraOption.body = stringify ? qs.stringify(ajaxOptions.data) : JSON.stringify(ajaxOptions.data);
+        extraOption.body = stringify ? qs.stringify(ajaxOptions.data, ajaxOptions.qsOption) : JSON.stringify(ajaxOptions.data);
         if (!ajaxOptions.headers) {
           iHeaders['Content-Type'] =  stringify ? 'application/x-www-form-urlencoded' : 'application/json; charset=utf-8';
         }
