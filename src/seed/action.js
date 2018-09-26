@@ -272,6 +272,10 @@ function noop() {}
 export function getProcessorByExec(model, initialState, modelName, actionName, exec, fetch, noDispatch) {
   return (...args) => {
     return (dispatch) => {
+      if (args[args.length - 1] === false) {
+        noDispatch = true;
+        args.pop();
+      }
       const statusMap = {
         start: encodeActionType(modelName, actionName, 'start'),
         success: encodeActionType(modelName, actionName, 'success'),
@@ -295,7 +299,7 @@ export function getProcessorByExec(model, initialState, modelName, actionName, e
           // #! 保留之前的逻辑，这里是否继续优化
           const option = Object.assign({
             data: exec.data ? Object.assign({}, exec.data, args[0]) : args[0]
-          }, args[1]);
+          }, args[1] || {});
           for (let key in option) {
             if (option[key] === undefined) {
               delete option[key];
@@ -326,6 +330,10 @@ export function getProcessorByExec(model, initialState, modelName, actionName, e
 export function getProcessorByGenerator(model, initialState, modelName, actionName, saga, noDispatch) {
   return (...args) => {
     return (dispatch) => {
+      if (args[args.length - 1] === false) {
+        noDispatch = true;
+        args.pop();
+      }
       if (noDispatch) {
         return model._actions[actionName].apply(model, ...args);
       } else {
@@ -347,6 +355,10 @@ export function getProcessorByGenerator(model, initialState, modelName, actionNa
 export function getProcessor(model, initialState, modelName, actionName, func, getState, noDispatch) {
   return (...args) => {
     return (dispatch) => {
+      if (args[args.length - 1] === false) {
+        noDispatch = true;
+        args.pop();
+      }
       // 兼容之前副作用
       if (typeof func === 'function') {
         let isReducer = true;
