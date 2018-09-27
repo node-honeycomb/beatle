@@ -20,12 +20,12 @@ export const exec = (name, feedback) => (model, method, descriptor) => {
       return this.setState({
         [name]: {
           exec: method,
-          callback: callback
+          callback: callback.bind(this)
         }
       }, ...args);
     } else {
       const newCallback = (nextStore, payload) => {
-        return callback(nextStore, payload, this._initialState, nextStore, {});
+        return callback.call(this, nextStore, payload, this._initialState, nextStore, {});
       };
       const promise = this.execute(method, newCallback, name === false, ...args);
       promise.then(ret => {
