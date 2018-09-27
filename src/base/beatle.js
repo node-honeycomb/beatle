@@ -299,7 +299,7 @@ export default class Beatle {
     }
     const basePath = paths.join(SEP);
     if (routeConfig.component) {
-      routeConfig.component = Beatle.fromLazy(routeConfig.component);
+      routeConfig.component = Beatle.fromLazy(routeConfig.component, this);
       if (routeConfig.component instanceof Beatle) {
         routeConfig.path = routeConfig.path + '(/**)';
         routeConfig.component = this._convertAppToComponent(routeConfig.component, basePath, routeConfig.routeType);
