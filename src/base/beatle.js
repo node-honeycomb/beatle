@@ -568,7 +568,7 @@ export default class Beatle {
       option.strict = true;
     }
 
-    const routes = [];
+    const routes = option.append ? this._setting.routes : [];
     /**
      * + 先要排序，把路径短的往前排
      *
