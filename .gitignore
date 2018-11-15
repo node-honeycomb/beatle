@@ -1,0 +1,16 @@
+node_modules
+.DS_store
+app_test.js
+out/
+config/config.js
+coverage/
+auto_router.js
+jsconfig.json
+*.log
+.idea/
+.package
+chunks/
+npm-debug.log.*
+chunks
+.editorconfig
+dist/
