@@ -1,6 +1,6 @@
 {
   "name": "beatle",
-  "version": "1.2.4",
+  "version": "1.2.5",
   "main": "./dist/core/beatle.js",
   "author": "dtboost <dtboost@aliyun.com>",
   "description": "Beatle是一套完整前端开发框架，用来构建客户端应用。",
@@ -107,7 +107,8 @@
   },
   "scripts": {
     "test": "node ./test/test_server/index.js",
-    "lint": "eslint ./src"
+    "lint": "eslint ./src",
+    "build": "honeypack build -c webpack.build.js"
   },
   "license": "MIT"
 }

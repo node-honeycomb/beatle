@@ -11,13 +11,8 @@ export function setReducers(model, modelName, actionName, actionCfg, async) {
   const callback = typeof actionCfg === 'function' ? actionCfg : actionCfg.reducer || actionCfg.callback || noop;
   let type;
   if (typeof callback === 'function') {
-    if (async) {
-      type = encodeActionType(modelName, actionName, 'success');
-      model._reducers[type] = callback;
-    } else {
-      type = encodeActionType(modelName, actionName);
-      model._reducers[type] = callback;
-    }
+    type = async ? encodeActionType(modelName, actionName, 'success') : encodeActionType(modelName, actionName);
+    model._reducers[type] = callback;
   } else {
     for (let status  in callback) {
       if (typeof callback[status] === 'function') {
