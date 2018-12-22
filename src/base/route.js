@@ -38,7 +38,8 @@ export default function route(path, RouteComponent, option = {}) {
         getComponent: indexRoute
       }, indexRoute.routeOptions);
     } else {
-      routeConfig.indexRoute = Object.assign(indexRoute, indexRoute.routeOptions);
+      const routeOptions = indexRoute.component ? indexRoute.component.routeOptions : indexRoute.getComponent.routeOptions;
+      routeConfig.indexRoute = Object.assign(indexRoute, routeOptions);
     }
   }
 
