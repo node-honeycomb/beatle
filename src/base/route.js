@@ -27,21 +27,34 @@ export default function route(path, RouteComponent, option = {}) {
     return null;
   }
 
-  if (routeConfig.indexRoute) {
-    if (routeConfig.indexRoute.prototype && routeConfig.indexRoute.prototype.isReactComponent) {
-      routeConfig.indexRoute = {
-        component: routeConfig.indexRoute
-      };
-    } else if (typeof routeConfig.indexRoute === 'function') {
-      routeConfig.indexRoute = {
-        getComponent: routeConfig.indexRoute
-      };
+  const indexRoute = routeConfig.indexRoute;
+  if (indexRoute) {
+    if (indexRoute.prototype && indexRoute.prototype.isReactComponent) {
+      routeConfig.indexRoute = Object.assign({
+        component: indexRoute
+      }, indexRoute.routeOptions);
+    } else if (typeof indexRoute === 'function') {
+      routeConfig.indexRoute = Object.assign({
+        getComponent: indexRoute
+      }, indexRoute.routeOptions);
+    } else {
+      routeConfig.indexRoute = Object.assign(indexRoute, indexRoute.routeOptions);
     }
   }
 
-  if (React.isValidElement(routeConfig.component)) {
+  // 重新修正component
+  if (typeof routeConfig.component.then === 'function') {
+    const promise = routeConfig.component;
+    delete routeConfig.component;
+    routeConfig.getComponent = (nextState, callback) => {
+      promise.then(component => {
+        callback(null, component);
+      }, callback);
+    };
+  } else if (React.isValidElement(routeConfig.component)) {
     const element = routeConfig.component;
     routeConfig.component = () => element;
+    // function component, 必须存在props作为第一个参数
   } else if (!routeConfig.component.prototype.isReactComponent && routeConfig.component.toString().split(')')[0].split('(').pop() !== 'props') {
     routeConfig.getComponent = routeConfig.component;
     delete routeConfig.component;
