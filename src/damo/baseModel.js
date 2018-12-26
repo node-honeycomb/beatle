@@ -9,25 +9,44 @@ import isPlainObject from '../core/isPlainObject';
 import {getProcessor, getProcessorByExec, getProcessorByGenerator, setReducers} from '../seed/action';
 
 // see: https://github.com/jayphelps/core-decorators
-export const exec = (name, feedback) => (model, method, descriptor) => {
+/**
+ * curdOpt = {
+ *  isGenarator,
+ *  exec,
+ *  id,
+ *  processData
+ * }
+ */
+export const exec = (name, feedback, curdOpt = {}) => (model, actionName, descriptor) => {
   const callback = descriptor.initializer ? descriptor.initializer() : descriptor.value;
   descriptor.initializer = undefined;
   descriptor.value = function (...args) {
+    // #! exce(String) 走model.actionName调用并且更新数据到指定name属性
     if (typeof name === 'string') {
       if (feedback) {
         args.push(feedback);
       }
       return this.setState({
         [name]: {
-          exec: method,
-          callback: callback.bind(this)
+          exec: curdOpt.exec || actionName,
+          callback: (nextStore, payload, initialState, currentState, opt) => {
+            callback.call(this, nextStore, payload, initialState, currentState, curdOpt || opt);
+          }
         }
       }, ...args);
     } else {
+      // #! exec(null|false)
       const newCallback = (nextStore, payload) => {
-        return callback.call(this, nextStore, payload, this._initialState, nextStore, {});
+        return callback.call(this, nextStore, payload, this._initialState, this.state, curdOpt);
       };
-      const promise = this.execute(method, newCallback, name === false, ...args);
+      let action = curdOpt;
+      if (action.exec) {
+        action.callback = newCallback;
+      } else {
+        action = newCallback;
+      }
+      // #! name === false 则只走model.actionName调用不更新数据，否则是根据返回结构更新数据
+      const promise = this.execute(actionName, action, name === false, ...args);
       promise.then(ret => {
         if (feedback) {
           feedback(null, ret);
@@ -110,14 +129,14 @@ export default class BaseModel {
       const map = {};
       for (let status in action.callback) {
         map[status] = (nextStore, payload) => {
-          nextStore[name] = action.callback[status](nextStore, payload, this._initialState[name], nextStore[name], action);
+          nextStore[name] = action.callback[status](nextStore, payload, this._initialState[name], this.state[name], action);
         };
       }
       return map;
     } else {
       reducer = action.callback || reducer;
       return (nextStore, payload) => {
-        nextStore[name] = reducer(nextStore, payload, this._initialState[name], nextStore[name], action);
+        nextStore[name] = reducer(nextStore, payload, this._initialState[name], this.state[name], action);
       };
     }
   }
@@ -149,6 +168,7 @@ export default class BaseModel {
         default:
           if (typeof nextState[key] === 'function') {
             const _callback = nextState[key];
+            // nextState[key] = crudOpt
             if (_callback.name === key) {
               nextState[key] = {
                 callback: this._wrapperReducer(key, _callback, nextState[key])
@@ -162,6 +182,7 @@ export default class BaseModel {
               };
               nextState[key].callback = this._wrapperReducer(key, _callback, nextState[key]);
             }
+            // nextState[key] = crudOpt
           } else if (nextState[key].exec) {
             let _callback = nextState[key].callback;
             if (typeof nextState[key].exec === 'string') {
@@ -225,11 +246,19 @@ export default class BaseModel {
     return promise;
   }
 
+  /**
+   * action可以是function
+   * action或者是对象 = {
+   *  callback,
+   *  exec, // 接口调用的描述，afterResponse可以对数据预处理
+   *  isGenerator
+   * }
+   */
   execute(name, action, noDispatch, ...args) {
     if (!this._initialState) {
       this._initialState = cloneDeep(this.state);
     }
-    if (this._defaultActions[name] && this.state[name] === undefined) {
+    if (this._defaultActions[name] && this.state[name] === undefined && !action.exec) {
       const _callback = action;
       action = cloneDeep(this._defaultActions[name]);
       action.callback = _callback || action.callback;
