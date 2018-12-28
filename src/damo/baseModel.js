@@ -30,7 +30,7 @@ export const exec = (name, feedback, curdOpt = {}) => (model, actionName, descri
         [name]: {
           exec: curdOpt.exec || actionName,
           callback: (nextStore, payload, initialState, currentState, opt) => {
-            callback.call(this, nextStore, payload, initialState, currentState, curdOpt || opt);
+            return callback.call(this, nextStore, payload, initialState, currentState, curdOpt || opt);
           }
         }
       }, ...args);
