@@ -136,7 +136,11 @@ export function getActions({
       }
     }
   }
-
+  // #! 大有用处：设置更新版本
+  model.__increment = 1;
+  model.__setIncrement = () => {
+    model.__increment++;
+  };
   model.effects = model.effects || {};
 
   Object.keys(actions).forEach((actionKey) => {
@@ -279,11 +283,17 @@ export function getProcessorByExec(model, initialState, modelName, actionName, e
 
       const promise = new Promise((resolve, reject) => {
         const errorCallback = function (error) {
-          !noDispatch && dispatch({type: statusMap.error, error: true, payload: {data: undefined, store: initialState, arguments: args, message: error.message, exec: exec}});
+          if (!noDispatch) {
+            model.__setIncrement();
+            dispatch({type: statusMap.error, error: true, payload: {data: undefined, store: initialState, arguments: args, message: error.message, exec: exec}});
+          }
           reject(error);
         };
         const successCallback = function (data) {
-          !noDispatch && dispatch({type: statusMap.success, payload: {data: data, store: initialState, arguments: args, exec: exec}});
+          if (!noDispatch) {
+            model.__setIncrement();
+            dispatch({type: statusMap.success, payload: {data: data, store: initialState, arguments: args, exec: exec}});
+          }
           resolve(data);
         };
 
@@ -315,7 +325,10 @@ export function getProcessorByExec(model, initialState, modelName, actionName, e
         return result;
       });
       // 添加一个promise，用于识别异步
-      !noDispatch && dispatch({type: statusMap.start, payload: {data: undefined, store: initialState, arguments: args, exec: exec, promise: promise}});
+      if (!noDispatch) {
+        model.__setIncrement();
+        dispatch({type: statusMap.start, payload: {data: undefined, store: initialState, arguments: args, exec: exec, promise: promise}});
+      }
 
       return promise;
     };
@@ -333,6 +346,7 @@ export function getProcessorByGenerator(model, initialState, modelName, actionNa
         return model._actions[actionName].apply(model, ...args);
       } else {
         const actionKey = typeToAction(modelName, actionName);
+        model.__setIncrement();
         dispatch({
           action: actionKey,
           payload: {
@@ -400,6 +414,7 @@ export function getProcessor(model, initialState, modelName, actionName, func, g
         const result = func.apply(model, args);
 
         if (isReducer && result === undefined) {
+          model.__setIncrement();
           // #! 同步action
           dispatch({
             type: encodeActionType(modelName, actionName),
@@ -430,6 +445,7 @@ export function getProcessor(model, initialState, modelName, actionName, func, g
       } else if (noDispatch) {
         return Promise.resolve(func && func.data);
       } else {
+        model.__setIncrement();
         // #! 同步action
         dispatch({
           type: encodeActionType(modelName, actionName),

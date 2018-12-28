@@ -1,6 +1,6 @@
 import {connect} from 'react-redux';
 
-function deepMerge(a, b, extra, obj) {
+function deepMerge(obj, a, b, extra) {
   obj = Object.assign({}, obj);
   for (let key in a) {
     if (Object(a[key]) === a[key] && Object(b[key]) === b[key]) {
@@ -37,7 +37,7 @@ export default function viewConnect(instance, dispatch, props = {}) {
     if (instance.flattern) {
       nextProps = Object.assign({}, props, stateProps, dispatchProps, parentProps);
     } else {
-      nextProps = deepMerge(stateProps, dispatchProps, parentProps, props);
+      nextProps = deepMerge(props, stateProps, dispatchProps, parentProps);
     }
     nextProps.dispatch = dispatch;
     return nextProps;

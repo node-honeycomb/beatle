@@ -77,7 +77,7 @@ export default function service(providers, Component, {injector, globalInjector,
                   name: name
                 };
               } else {
-                model = typeof action.model === 'string' ? selector.getModel(action.model) : action.model;
+                model = typeof action.model === 'string' ? selector.getModel(action.model) : action.model || selector.getModel(selector.bindings[0]);
               }
               if (model && model[action.name]) {
                 const params = action.getParams ? action.getParams(this.props, this.context) : action.params;

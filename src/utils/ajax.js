@@ -175,8 +175,8 @@ export default class Ajax {
     if (mutable && normalize) {
       const data = isPlainObject(ajaxOptions.data) ? Object.assign({}, ajaxOptions.data) : ajaxOptions.data;
       ajaxOptions.url = substitute(ajaxOptions.url, data, true, delimeter);
-    } else if (ajaxOptions.params) {
-      ajaxOptions.url = substitute(ajaxOptions.url, ajaxOptions.params, false, delimeter);
+    } else if (ajaxOptions.params || ajaxOptions.data) {
+      ajaxOptions.url = substitute(ajaxOptions.url, ajaxOptions.params || ajaxOptions.data, false, delimeter);
     }
   }
 
