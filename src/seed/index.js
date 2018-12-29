@@ -22,6 +22,7 @@ const reduxShape = {
   Models: propTypes.oneOfType([propTypes.object, propTypes.func])
 };
 
+let guid = 1;
 export default class ReduxSeed {
   static defaultApp = 'main';
 
@@ -80,9 +81,16 @@ export default class ReduxSeed {
     this._isImmutable = options.initialState === undefined || immutable.isImmutable(options.initialState);
     this._pureReducers = [];
     this._pureReducers.state = {};
+    this._incrementReducerState = {
+      __uuid__: guid
+    };
     this._init(this._instanceName);
     const initialState = this._isImmutable && options.initialState ? options.initialState.asMutable({deep: true}) : options.initialState;
     this._initStore(initialState, options.middlewares.concat(this._saga.getMiddleware(this.getModel.bind(this))), options.Models);
+  }
+
+  increment() {
+    this._incrementReducerState.__uuid__ = ++guid;
   }
 
   _init() {
@@ -103,6 +111,7 @@ export default class ReduxSeed {
 
   _initStore(initialState = {}, middlewares, Models) {
     initialState['__pure_reducer__'] = this._pureReducers.state;
+    initialState['__increment_reducer__'] = this._incrementReducerState;
     configureStore(initialState, middlewares, () => {
       return this.reducerBuilder(Models);
     }, (store) => {
@@ -196,6 +205,11 @@ export default class ReduxSeed {
     for (let name in Models) {
       this._setModel(redux, name, Models[name]);
     }
+    redux.rootReducer['__increment_reducer__'] = () => {
+      return {
+        __uuid__: this._incrementReducerState.__uuid__
+      };
+    };
     redux.rootReducer['__pure_reducer__'] = (nextStore = this._pureReducers.state, action) => {
       if (this._pureReducers.length) {
         const newStore = {};

@@ -137,9 +137,8 @@ export function getActions({
     }
   }
   // #! 大有用处：设置更新版本
-  model.__increment = 1;
   model.__setIncrement = () => {
-    model.__increment++;
+    seed.increment();
   };
   model.effects = model.effects || {};
 
