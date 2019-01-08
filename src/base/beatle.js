@@ -8,8 +8,9 @@ import ReactDOM from 'react-dom';
 import propTypes from 'prop-types';
 import {Router, browserHistory, hashHistory} from 'react-router';
 import useBasename from 'history/lib/useBasename';
-import createMemoryHistory from 'history/lib/createMemoryHistory';
-import createRouterHistory from 'react-router/lib/createRouterHistory';
+import createMemoryHistory from 'react-router/lib/createMemoryHistory';
+import useRouterHistory from 'react-router/lib/useRouterHistory';
+// import createRouterHistory from 'react-router/lib/createRouterHistory';
 import _get from 'lodash/get';
 import warning from 'fbjs/lib/warning';
 import messages from '../core/messages';
@@ -57,6 +58,19 @@ const beatleShape = {
   routeType: propTypes.oneOfType([propTypes.object, propTypes.string])
 };
 const SEP = '/';
+function createRouterHistory(createHistory) {
+  let canUseDOM = !!(typeof window !== 'undefined' && window.document && window.document.createElement);
+  let history = void 0;
+  if (canUseDOM) {
+    history = useRouterHistory(createHistory)({
+      entries: [{
+        pathname: window.location.pathname,
+        search: window.location.search
+      }]
+    });
+  }
+  return history;
+}
 const historys = {
   localHistory: createRouterHistory(createMemoryHistory),
   hashHistory: hashHistory,
