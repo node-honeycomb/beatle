@@ -18,9 +18,22 @@ import {getProcessor, getProcessorByExec, getProcessorByGenerator, setReducers} 
  * }
  */
 export const exec = (name, feedback, curdOpt = {}) => (model, actionName, descriptor) => {
-  const callback = descriptor.initializer ? descriptor.initializer() : descriptor.value;
+  const reducer = descriptor.initializer ? descriptor.initializer() : descriptor.value;
   descriptor.initializer = undefined;
   descriptor.value = function (...args) {
+    let callback;
+    if (Object(reducer) === reducer) {
+      callback = {};
+      for (let key in reducer) {
+        callback[key] = (nextStore, payload, initialState, currentState, opt) => {
+          return reducer[key].call(this, nextStore, payload, initialState, currentState, curdOpt || opt);
+        };
+      }
+    } else {
+      callback = (nextStore, payload, initialState, currentState, opt) => {
+        return reducer.call(this, nextStore, payload, initialState, currentState, curdOpt || opt);
+      };
+    }
     // #! exce(String) 走model.actionName调用并且更新数据到指定name属性
     if (typeof name === 'string') {
       if (feedback) {
@@ -29,21 +42,16 @@ export const exec = (name, feedback, curdOpt = {}) => (model, actionName, descri
       return this.setState({
         [name]: {
           exec: curdOpt.exec || actionName,
-          callback: (nextStore, payload, initialState, currentState, opt) => {
-            return callback.call(this, nextStore, payload, initialState, currentState, curdOpt || opt);
-          }
+          callback: callback
         }
       }, ...args);
     } else {
       // #! exec(null|false)
-      const newCallback = (nextStore, payload) => {
-        return callback.call(this, nextStore, payload, this._initialState, this.state, curdOpt);
-      };
       let action = curdOpt;
       if (action.exec) {
-        action.callback = newCallback;
+        action.callback = callback;
       } else {
-        action = newCallback;
+        action = callback;
       }
       // #! name === false 则只走model.actionName调用不更新数据，否则是根据返回结构更新数据
       const promise = this.execute(actionName, action, name === false, ...args);
@@ -127,9 +135,9 @@ export default class BaseModel {
   _wrapperReducer(name, reducer, action) {
     if (isPlainObject(reducer)) {
       const map = {};
-      for (let status in action.callback) {
+      for (let status in reducer) {
         map[status] = (nextStore, payload) => {
-          nextStore[name] = action.callback[status](nextStore, payload, this._initialState[name], this.state[name], action);
+          nextStore[name] = reducer[status](nextStore, payload, this._initialState[name], this.state[name], action);
         };
       }
       return map;
