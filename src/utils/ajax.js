@@ -219,7 +219,7 @@ export default class Ajax {
     }
 
     const iHeaders = {};
-    const mutable = ajaxOptions.mutable === false ? false : (ajaxOptions.data === undefined || isPlainObject(ajaxOptions.data));
+    const mutable = ajaxOptions.mutable === false ? false : (ajaxOptions.data === undefined || isPlainObject(ajaxOptions.data)) || Array.isArray(ajaxOptions.data);
     // 替换字符串变量，只有header不填
     this._substitute(ajaxOptions, mutable);
 
