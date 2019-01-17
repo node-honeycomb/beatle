@@ -22,7 +22,7 @@ export const exec = (name, feedback, curdOpt = {}) => (model, actionName, descri
   descriptor.initializer = undefined;
   descriptor.value = function (...args) {
     let callback;
-    if (Object(reducer) === reducer) {
+    if (isPlainObject(reducer)) {
       callback = {};
       for (let key in reducer) {
         callback[key] = (nextStore, payload, initialState, currentState, opt) => {
