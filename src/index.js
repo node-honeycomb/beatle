@@ -2,7 +2,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import enhancleBeatle from './damo/index';
 import Beatle from './base/beatle';
-import {Link} from 'react-router';
+import {Link} from 'react-router-dom';
 import Ajax from './utils/ajax';
 import Poller from './utils/poller';
 import ReduxSeed from './seed';
@@ -10,6 +10,7 @@ import modelChecker from './base/model';
 import resourceChecker from './base/resource';
 import warning from 'fbjs/lib/warning';
 import messages from './core/messages';
+import StateObserver from './seed/stateObserver';
 /**
  * ### 提供Link标签，对react-router的Link标签做了Hoc
  *
@@ -199,7 +200,8 @@ Object.assign(Beatle, {
   Ajax: Ajax,
   Poller: Poller,
   ReduxSeed: ReduxSeed,
-  Link: BeatleLink
+  Link: BeatleLink,
+  StateObserver: StateObserver
 });
 
 mixinApiToStatic(Beatle);
@@ -273,7 +275,7 @@ const BeatlePro = enhancleBeatle(Beatle);
   };
 });
 
-BeatlePro.prototype.version = '1.2.16';
+BeatlePro.prototype.version = '2.0.0-beta.1';
 module.exports = BeatlePro;
 
 export default BeatlePro;

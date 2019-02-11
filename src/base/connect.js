@@ -1,4 +1,5 @@
 import {connect} from 'react-redux';
+import {withRouter} from 'react-router-dom';
 
 function deepMerge(obj, a, b, extra) {
   obj = Object.assign({}, obj);
@@ -83,6 +84,6 @@ export default function viewConnect(instance, dispatch, props = {}) {
       };
     }
 
-    return connect(mergeStateToProps, mergeActionToProps, mergeProps, {withRef: true})(BaseComponent);
+    return withRouter(connect(mergeStateToProps, mergeActionToProps, mergeProps, {forwardRef: true})(BaseComponent));
   };
 }

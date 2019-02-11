@@ -8,7 +8,7 @@ import thunk from 'redux-thunk';
  * + redux的middleware, 支持action日志打印到console控制台
  * > see: https://www.npmjs.com/package/redux-logger
  */
-import createLogger from 'redux-logger';
+import {createLogger} from 'redux-logger';
 
 import createSagaMiddleware from 'redux-saga/lib/internal/middleware';
 

@@ -6,11 +6,8 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 import propTypes from 'prop-types';
-import {Router, browserHistory, hashHistory} from 'react-router';
-import useBasename from 'history/lib/useBasename';
-import createMemoryHistory from 'react-router/lib/createMemoryHistory';
-import useRouterHistory from 'react-router/lib/useRouterHistory';
-// import createRouterHistory from 'react-router/lib/createRouterHistory';
+import {BrowserRouter, HashRouter, MemoryRouter, Router, widthRouter} from 'react-router-dom';
+import {renderRoutes} from 'react-router-config';
 import _get from 'lodash/get';
 import warning from 'fbjs/lib/warning';
 import messages from '../core/messages';
@@ -58,29 +55,47 @@ const beatleShape = {
   routeType: propTypes.oneOfType([propTypes.object, propTypes.string])
 };
 const SEP = '/';
-function createRouterHistory(createHistory) {
-  let canUseDOM = !!(typeof window !== 'undefined' && window.document && window.document.createElement);
-  let history = void 0;
-  if (canUseDOM) {
-    history = useRouterHistory(createHistory)({
-      entries: [{
-        pathname: window.location.pathname,
-        search: window.location.search
-      }]
-    });
-  }
-  return history;
-}
-const historys = {
-  localHistory: createRouterHistory(createMemoryHistory),
-  hashHistory: hashHistory,
-  browserHistory: browserHistory
+
+const initialEntries = [{
+  pathname: window.location.pathname,
+  search: window.location.search
+}];
+const RouterByType = {
+  localHistory: MemoryRouter,
+  hashHistory: HashRouter,
+  browserHistory: BrowserRouter
 };
+
 export default class Beatle {
   // #! 静态属性不对外开放，包括未初始化时的函数列表、默认应用实例、所有实例。
   static fireCallbacks = {};
   static defaultApp = null;
   static instances = {};
+
+  _getRouterProps(routes, _basePath) {
+    const {basePath, routeType, routePrompt} = this._setting;
+    _basePath = _basePath || basePath;
+
+    return {
+      initialEntries: routeType === 'localHistory' ?  Object.keys(this.routesMap) : initialEntries,
+      getUserConfirmation: routePrompt,
+      basename: _basePath && _basePath[0] !== SEP ? SEP + _basePath : _basePath,
+      children: renderRoutes(routes)
+    };
+  }
+
+  _getRouter(routeType) {
+    let HistoryRouter;
+    if (Object(routeType) === routeType) {
+      /* eslint-disable react/prop-types, react/display-name */
+      HistoryRouter = ({children}) => {
+        return (<Router history={routeType} >{children}</Router>);
+      };
+    } else {
+      HistoryRouter = RouterByType[routeType] || BrowserRouter;
+    }
+    return HistoryRouter;
+  }
 
   constructor(options = {}) {
     propTypes.checkPropTypes(beatleShape, options, 'BeatleOptions', 'Beatle');
@@ -95,7 +110,8 @@ export default class Beatle {
       rootDom: options.root || document.body,
       routes: [],
       routesMap: {},
-      history: Object(options.routeType) === options.routeType ? options.routeType : historys[options.routeType] || historys.browserHistory
+      HistoryRouter: this._getRouter(options.routeType),
+      routePrompt: options.routePrompt
     };
     this._middlewares = [];
     this.seed = null;
@@ -232,16 +248,6 @@ export default class Beatle {
     };
   }
 
-  _withBasename(basePath) {
-    if (basePath) {
-      if (basePath[0] !== SEP) {
-        basePath = SEP + basePath;
-      }
-      return useBasename(() => this._setting.history)({basename: basePath});
-    } else {
-      return this._setting.history;
-    }
-  }
   _parsePath(path, name) {
     if (path) {
       path = path.replace('/:name', '/' + name);
@@ -250,16 +256,20 @@ export default class Beatle {
     }
     return path;
   }
+
   _convertAppToComponent(appComponent, basePath, routeType) {
     const self = this;
     if (!appComponent.parent) {
       appComponent.parent = self;
       const baseName = basePath[0] === '/' ? basePath : self._setting.basePath + SEP + basePath;
-      appComponent._setting.history = Object(routeType) === routeType ? routeType : historys[routeType] || appComponent._setting.history;
+
+      // 路由组件
+      appComponent._setting.Router = this._getRouter(routeType || appComponent._setting.history);
+
       let key;
       let _routeCfg;
       // 相同路由下增加路径
-      if (self._setting.history === appComponent._setting.history) {
+      if (self._setting.HistoryRouter === appComponent._setting.HistoryRouter) {
         appComponent._setting.basePath = ''; // this._setting.basePath;
         appComponent.parent = self;
         for (key in appComponent._setting.routesMap) {
@@ -284,24 +294,25 @@ export default class Beatle {
           }
         }
       } else {
-        appComponent._activeHistory = appComponent._setting.history = appComponent._withBasename(baseName);
+        appComponent._setting.basePath = appComponent._getBasePath(baseName);
       }
     }
-    const IProvider = getProvider(appComponent.injector, appComponent.globalInjector);
-    const history = appComponent._setting.history;
 
     class newComponent extends React.PureComponent {
       static routeOptions = appComponent.routeOptions || {};
       render() {
-        if (!appComponent._activeHistory) {
-          appComponent._activeHistory = self._activeHistory;
-        }
+        const IRouter = appComponent._setting.HistoryRouter;
+        const IProvider = getProvider(appComponent.injector, appComponent.globalInjector);
         return (<IProvider store={appComponent.getStore()}>
-          <Router history={history} routes={appComponent._setting.routes} />
+          <IRouter {...appComponent._getRouterProps(appComponent._setting.routes)} ref={inst => {
+            if (inst) {
+              this._activeHistory = inst.history;
+            }
+          }} />
         </IProvider>);
       }
     }
-    return newComponent;
+    return widthRouter(newComponent);
   }
   parseRoute(routeConfig, strict) {
     // #! 如果设置路由是一个子App
@@ -917,7 +928,7 @@ export default class Beatle {
       return;
     }
     this._hasRendered = true;
-    let IRouter = Router;
+    let IRouter = this._setting.HistoryRouter;
     // basePath, renderCb
     if (typeof rootDom === 'string' || !rootDom || !rootDom.nodeType) {
       renderCb = basePath;
@@ -938,11 +949,13 @@ export default class Beatle {
 
     const routes = this._setting.routes;
     rootDom = rootDom || this._setting.rootDom;
-    this._setting.basePath = basePath || this._setting.basePath;
-    this._activeHistory = this._withBasename(this._setting.basePath);
     const IProvider = getProvider(this.injector, this.globalInjector);
     const appElement = (<IProvider store={this.getStore()}>
-      <IRouter history={this._activeHistory} routes={routes} />
+      <IRouter {...this._getRouterProps(routes, basePath)} ref={inst => {
+        if (inst) {
+          this._activeHistory = inst.history;
+        }
+      }} />
     </IProvider>);
     if (renderCb) {
       renderCb(appElement, rootDom);
