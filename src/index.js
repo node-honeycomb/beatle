@@ -256,7 +256,7 @@ const docorators = {
     if (typeof app === 'string') {
       app = Beatle.getApp(app);
     }
-    return app.view(option.selector, BaseComponent, option.providers, option.bindings, option.hookActions);
+    return app.view(option.selector, BaseComponent, option.providers, option.bindings, option.hookActions, option.props, option.getProps);
   })
 };
 
@@ -273,7 +273,7 @@ const BeatlePro = enhancleBeatle(Beatle);
   };
 });
 
-BeatlePro.prototype.version = '1.2.17';
+BeatlePro.prototype.version = '1.2.18';
 module.exports = BeatlePro;
 
 export default BeatlePro;

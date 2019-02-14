@@ -166,7 +166,7 @@ export default function enhanceBeatle(Beatle) {
       this.injector.setServices(providers);
     }
 
-    view(selector, SceneComponent, providers, bindings, hookActions, props) {
+    view(selector, SceneComponent, providers, bindings, hookActions, props, getProps) {
       if (selector !== false) {
         if (selector && selector.prototype && selector.prototype.isReactComponent) {
           props = hookActions;
@@ -197,7 +197,7 @@ export default function enhanceBeatle(Beatle) {
           Object.assign(selector, this.toBindings(selector.bindings, selector.flattern, selector));
         }
         // #! 绑定组件, 连接到redux
-        SceneComponent = connect(selector, this.dispatch.bind(this), props)(SceneComponent);
+        SceneComponent = connect(selector, this.dispatch.bind(this), props, getProps)(SceneComponent);
         // #! 额外注入context到组件中
 
         selector.getModel = (name) => {
