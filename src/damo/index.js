@@ -169,6 +169,7 @@ export default function enhanceBeatle(Beatle) {
     view(selector, SceneComponent, providers, bindings, hookActions, props, getProps) {
       if (selector !== false) {
         if (selector && selector.prototype && selector.prototype.isReactComponent) {
+          getProps = props;
           props = hookActions;
           hookActions = bindings;
           bindings = providers;
