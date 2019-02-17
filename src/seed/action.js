@@ -283,14 +283,12 @@ export function getProcessorByExec(model, initialState, modelName, actionName, e
       const promise = new Promise((resolve, reject) => {
         const errorCallback = function (error) {
           if (!noDispatch) {
-            model.__setIncrement();
             dispatch({type: statusMap.error, error: true, payload: {data: undefined, store: initialState, arguments: args, message: error.message, exec: exec}});
           }
           reject(error);
         };
         const successCallback = function (data) {
           if (!noDispatch) {
-            model.__setIncrement();
             dispatch({type: statusMap.success, payload: {data: data, store: initialState, arguments: args, exec: exec}});
           }
           resolve(data);
@@ -325,7 +323,6 @@ export function getProcessorByExec(model, initialState, modelName, actionName, e
       });
       // 添加一个promise，用于识别异步
       if (!noDispatch) {
-        model.__setIncrement();
         dispatch({type: statusMap.start, payload: {data: undefined, store: initialState, arguments: args, exec: exec, promise: promise}});
       }
 
@@ -345,7 +342,6 @@ export function getProcessorByGenerator(model, initialState, modelName, actionNa
         return model._actions[actionName].apply(model, ...args);
       } else {
         const actionKey = typeToAction(modelName, actionName);
-        model.__setIncrement();
         dispatch({
           action: actionKey,
           payload: {
@@ -413,7 +409,6 @@ export function getProcessor(model, initialState, modelName, actionName, func, g
         const result = func.apply(model, args);
 
         if (isReducer && result === undefined) {
-          model.__setIncrement();
           // #! 同步action
           dispatch({
             type: encodeActionType(modelName, actionName),
@@ -444,7 +439,6 @@ export function getProcessor(model, initialState, modelName, actionName, func, g
       } else if (noDispatch) {
         return Promise.resolve(func && func.data);
       } else {
-        model.__setIncrement();
         // #! 同步action
         dispatch({
           type: encodeActionType(modelName, actionName),

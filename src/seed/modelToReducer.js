@@ -8,6 +8,7 @@ export default function modelToReducer(model, initialState, isImmutable) {
     const reducer = model._reducers[action.type];
     let nextStore = store;
     if (reducer) {
+      model.__setIncrement();
       const prevStore = new StateObserver(store, model.state);
       /**
        * ### 每个action的副作用的执行
