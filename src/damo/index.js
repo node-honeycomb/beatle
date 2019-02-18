@@ -184,14 +184,11 @@ export default function enhanceBeatle(Beatle) {
           selector.bindings = selector.bindings || bindings;
           selector.hookActions = selector.hookActions || hookActions;
         } else {
-          if (Object(selector) === selector) {
-            bindings = selector.bindings;
-            hookActions = selector.hookActions;
-          } else {
+          if (Object(selector) !== selector) {
             bindings = bindings || selector;
+            selector = new BaseSelector();
+            selector.bindings = [].concat(bindings || '');
           }
-          selector = new BaseSelector();
-          selector.bindings = [].concat(bindings || '');
           selector.hookActions = hookActions;
         }
         if (selector.bindings) {
