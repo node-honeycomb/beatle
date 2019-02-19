@@ -267,13 +267,15 @@ const BeatlePro = enhancleBeatle(Beatle);
     if (!this._activeHistory) return;
     if (typeof path === 'string') {
       const routeConfig = this.route(path);
-      path = this.getResolvePath(routeConfig);
+      if (routeConfig) {
+        path = this.getResolvePath(routeConfig);
+      }
     }
     this._activeHistory[method](path, state);
   };
 });
 
-BeatlePro.prototype.version = '1.2.24';
+BeatlePro.prototype.version = '1.2.25';
 module.exports = BeatlePro;
 
 export default BeatlePro;
