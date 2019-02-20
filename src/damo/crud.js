@@ -89,7 +89,7 @@ const crud = {
   message: (sucMsg, errMsg) => {
     return (err) => {
       if (err) {
-        errMsg && crud.console.error(errMsg, err.message);
+        errMsg && crud.console.error(errMsg, err);
       } else {
         sucMsg && crud.console.success(sucMsg);
       }
