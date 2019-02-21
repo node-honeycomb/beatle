@@ -556,7 +556,7 @@ export default class Beatle {
       }
       const childRoute = route(path, RouteComponent, {
         callback: this.parseRoute.bind(this),
-        fromLazy: (com) => Beatle.fromLazy(com, this)
+        fromLazy: com => Beatle.fromLazy(com, this)
       });
       if (childRoute) {
         this._pushRoute(this._setting.routes, childRoute);
@@ -636,7 +636,8 @@ export default class Beatle {
             name: keys[0] || SEP,
             strict: option.strict,
             callback: routeCallback,
-            fpath: relativePath
+            fpath: relativePath,
+            fromLazy: com => Beatle.fromLazy(com, this)
           });
           if (childRoute) {
             this._pushRoute(routes, childRoute);
@@ -670,7 +671,8 @@ export default class Beatle {
               navKey: navKey,
               strict: option.strict,
               callback: routeCallback,
-              fpath: relativePath
+              fpath: relativePath,
+              fromLazy: com => Beatle.fromLazy(com, this)
             });
             if (childRoute) {
               childRoute.parent = parentRoute;
@@ -682,7 +684,8 @@ export default class Beatle {
               navKey: navKey,
               strict: option.strict,
               callback: routeCallback,
-              fpath: relativePath
+              fpath: relativePath,
+              fromLazy: com => Beatle.fromLazy(com, this)
             });
             if (childRoute) {
               this._pushRoute(routes, childRoute);
