@@ -555,7 +555,8 @@ export default class Beatle {
         }
       }
       const childRoute = route(path, RouteComponent, {
-        callback: this.parseRoute.bind(this)
+        callback: this.parseRoute.bind(this),
+        fromLazy: (com) => Beatle.fromLazy(com, this)
       });
       if (childRoute) {
         this._pushRoute(this._setting.routes, childRoute);
