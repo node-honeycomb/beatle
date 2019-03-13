@@ -54,6 +54,7 @@
     "hc-honeypack-auto-module-plugin": "0.0.6",
     "damo-cli-docco-plugin": "0.0.5",
     "antd": "3.0.0",
+    "hc-components": "0.3.9",
     "babel-core": "6.7.6",
     "babel-eslint": "^8.0.3",
     "babel-loader": "6.2.5",
@@ -95,7 +96,11 @@
     "webpack": "3.9.1",
     "webpack-dev-middleware": "1.12.2",
     "webpack-dev-server": "2.9.5",
-    "xfs": "0.2.0"
+    "xfs": "0.2.0",
+    "react-container-query": "^0.9.1",
+    "react-document-title": "^2.0.3",
+    "marked": "0.3.19",
+    "raw-loader": "0.5.1"
   },
   "repository": {
     "type": "git",
@@ -108,7 +113,8 @@
   "scripts": {
     "test": "node ./test/test_server/index.js",
     "lint": "eslint ./src",
-    "build": "honeypack build -c webpack.build.js"
+    "build": "honeypack build -c webpack.build.js",
+    "demo": "honeypack build -c webpack.demo.js"
   },
   "license": "MIT"
 }

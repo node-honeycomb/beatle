@@ -9,7 +9,7 @@ import './app.less';
 const app = new Beatle({
   name: 'main',
   routeType: 'hashHistory',
-  root: document.getElementById('container'),
+  root: document.getElementById('main'),
   autoLoadModel: true,
   autoLoadRoute: true
   // models: require.context('./models', false, /\w+\.js$/),
