@@ -11,7 +11,7 @@
     "react",
     "starter"
   ],
-  "homepage": "default",
+  "homepage": "https://node-honeycomb.github.io/beatle",
   "dependencies": {
     "hoist-non-react-statics": "2.3.1",
     "isomorphic-fetch": "2.1.1",
