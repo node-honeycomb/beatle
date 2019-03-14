@@ -673,10 +673,10 @@ export default class Beatle {
               strict: option.strict,
               callback: routeCallback,
               fpath: relativePath,
+              parent: parentRoute,
               fromLazy: com => Beatle.fromLazy(com, this)
             });
             if (childRoute) {
-              childRoute.parent = parentRoute;
               this._pushRoute(parentRoute.childRoutes, childRoute);
             }
           } else {

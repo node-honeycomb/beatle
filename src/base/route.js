@@ -18,7 +18,8 @@ export default function route(path, RouteComponent, option = {}) {
     name: option.name,
     navKey: option.navKey,
     component: RouteComponent,
-    fpath: option.fpath
+    fpath: option.fpath,
+    parent: option.parent
   }, RouteComponent.routeOptions);
   // 把子路由组件的routeOptions也合并进来
   mergeRouteOptions(routeConfig);
