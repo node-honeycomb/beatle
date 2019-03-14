@@ -445,6 +445,7 @@ export default class Beatle {
         }
         resolvePath = paths.join(SEP).replace(/\/+/g, SEP);
         routeConfig.resolvePath = resolvePath;
+        routeConfig.path = routeConfig.path || ppath;
       }
     }
     if (flag) {
@@ -578,7 +579,7 @@ export default class Beatle {
       };
     }
     const routeCallback = option.callback || this.parseRoute.bind(this);
-    const leave = option.leave || 1;
+    const level = option.level || 1;
     if (option.strict === undefined) {
       option.strict = true;
     }
@@ -631,7 +632,7 @@ export default class Beatle {
         let childRoute;
 
         // #! 路径短于指定级别时都认为一级路由处理
-        if (keys.length < leave) {
+        if (keys.length < level) {
           childRoute = route(keys[0] || SEP, Comp, {
             name: keys[0] || SEP,
             strict: option.strict,
