@@ -793,11 +793,11 @@ export default class Beatle {
   toBindings(bindings, flattern, context) {
     // #! 从redux模块中获取model实例和所有的action
     const {models, actions} = ReduxSeed.getRedux(this._setting.seedName);
-    bindings._sign = {};
     return {
       flattern: flattern,
       dataBindings: typeof bindings[0] === 'function' ? bindings[0].bind(context) : (state) => {
         const iState = {};
+        bindings._sign = {};
         bindings.forEach((binding) => {
           if (typeof binding === 'string') {
             let mState = {};
@@ -839,6 +839,7 @@ export default class Beatle {
       },
       eventBindings: typeof bindings[1] === 'function' ? (dispatch, props) => bindings[1].call(context, dispatch, props, actions) : (dispatch) => {
         const iAction = {};
+        bindings._sign = bindings._sign || {};
         bindings.forEach((binding) => {
           if (typeof binding === 'string' && actions[binding]) {
             let mAction = {};
@@ -889,6 +890,7 @@ export default class Beatle {
             }
           }
         });
+        delete bindings._sign;
         return iAction;
       }
     };
