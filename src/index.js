@@ -147,9 +147,10 @@ Object.assign(Beatle, {
       return mixinApiToStatic({}, appName);
     }
   },
-  createModel(Model, Resource) {
+  createModel(Model, Resource, noDispatch) {
     if (this !== BeatlePro) {
       // for decorator model
+      // !TODO 可能有问题
       return docorators.createModel.call(Beatle, Model);
     } else {
       // #! 校验失败应该返回错误信息 see: https://github.com/facebook/prop-types/issues/142
@@ -157,7 +158,7 @@ Object.assign(Beatle, {
         modelChecker(Model, 'model');
         if (Resource) {
           resourceChecker(Resource, 'resource');
-          return ReduxSeed.createModel(Model, Resource);
+          return ReduxSeed.createModel(Model, Resource, noDispatch);
         } else {
           return Model;
         }
@@ -231,8 +232,8 @@ const docorators = {
     return app.model(Model, option.Resource);
   }),
   // decorator for createModel
-  createModel: Resource => Model => {
-    return BeatlePro.createModel(Model, Resource);
+  createModel: (Resource, noDispatch) => Model => {
+    return BeatlePro.createModel(Model, Resource, noDispatch);
   },
   // docorator for route
   route: getDecorator((app, option, BaseComponent) => {
@@ -275,7 +276,7 @@ const BeatlePro = enhancleBeatle(Beatle);
   };
 });
 
-BeatlePro.prototype.version = '1.2.32';
+BeatlePro.prototype.version = '1.2.33';
 module.exports = BeatlePro;
 
 export default BeatlePro;

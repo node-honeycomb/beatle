@@ -36,7 +36,7 @@ export default class ReduxSeed {
    * | createModel | model `Object`, resource `Object` | 组合resource到model中，等同于Beatle.createModel |
    * | getRedux | name `String` | 获取指定的seed实例 |
    */
-  static createModel(Model, Resource) {
+  static createModel(Model, Resource, noDispatch) {
     Model.actions = Model.actions || {};
     for (let key in Resource) {
       if (Model.actions[key]) {
@@ -44,6 +44,7 @@ export default class ReduxSeed {
       } else {
         Model.actions[key] = {
           exec: Resource[key],
+          noDispatch: noDispatch || Resource[key].noDispatch,
           callback: (nextStore, payload) => {
             return payload.data;
           }

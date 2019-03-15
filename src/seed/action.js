@@ -237,7 +237,7 @@ export function getActions({
       if (exec) {
         // #! 异步action
         setReducers(model, modelName, actionKey, actionCfg, true);
-        actionCfg._processor = model._actions[actionKey] = getProcessorByExec(model, initialState, modelName, actionKey, exec, fetch);
+        actionCfg._processor = model._actions[actionKey] = getProcessorByExec(model, initialState, modelName, actionKey, exec, fetch, exec.noDispatch);
       } else {
         setReducers(model, modelName, actionKey, actionCfg);
         if (isGenerator(actionCfg)) {
