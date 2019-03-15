@@ -49,7 +49,7 @@ export default class ReduxSeed {
             return payload.data;
           }
         };
-        if (Model.prototype instanceof BaseModel) {
+        if (Model.prototype instanceof BaseModel && !Model.prototype[actionName]) {
           Model.prototype[actionName] = function (...args) {
             const promise = this.execute(actionName, {exec: exec}, true, ...args);
             return this.fromPromise(promise);
