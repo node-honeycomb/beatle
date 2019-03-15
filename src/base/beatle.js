@@ -793,7 +793,7 @@ export default class Beatle {
   toBindings(bindings, flattern, context) {
     // #! 从redux模块中获取model实例和所有的action
     const {models, actions} = ReduxSeed.getRedux(this._setting.seedName);
-
+    bindings._sign = {};
     return {
       flattern: flattern,
       dataBindings: typeof bindings[0] === 'function' ? bindings[0].bind(context) : (state) => {
@@ -815,6 +815,7 @@ export default class Beatle {
             }
           } else {
             for (let key in binding) {
+              if (bindings._sign[key]) continue;
               if (Object(binding[key]) === binding[key]) {
                 iState[key] = binding[key];
               } else if (typeof binding[key] === 'string') {
@@ -823,6 +824,7 @@ export default class Beatle {
                 if (models[keys[0]] && (keys[1] === 'store' || keys[1] === 'state')) {
                   // #! see > http://lodashjs.com/docs/#_getobject-path-defaultvalue
                   mState[key] = _get(state[keys[0]], keys.slice(2));
+                  bindings._sign[key] = true;
                 }
                 if (flattern) {
                   Object.assign(iState, mState);
@@ -859,6 +861,7 @@ export default class Beatle {
             }
           } else {
             for (let key in binding) {
+              if (bindings._sign[key]) continue;
               if (typeof binding[key] === 'function') {
                 iAction[key] = binding[key].bind(null, dispatch);
               } else if (typeof binding[key] === 'string') {
@@ -875,6 +878,7 @@ export default class Beatle {
                       return dispatch(result);
                     }
                   };
+                  bindings._sign[key] = true;
                 }
                 if (flattern) {
                   Object.assign(iAction, mAction);
