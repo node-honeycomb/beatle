@@ -445,7 +445,6 @@ export default class Beatle {
         }
         resolvePath = paths.join(SEP).replace(/\/+/g, SEP);
         routeConfig.resolvePath = resolvePath;
-        routeConfig.path = routeConfig.path || ppath;
       }
     }
     if (flag) {
