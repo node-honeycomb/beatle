@@ -13,6 +13,7 @@ import extractModules from '../core/extractModules';
 import Saga from './saga';
 import BaseModel from '../damo/baseModel';
 import reducerImmediate from './reducerImmediate';
+import forEach from 'lodash/forEach';
 
 const reduxShape = {
   ajax: propTypes.object,
@@ -36,21 +37,26 @@ export default class ReduxSeed {
    * | createModel | model `Object`, resource `Object` | 组合resource到model中，等同于Beatle.createModel |
    * | getRedux | name `String` | 获取指定的seed实例 |
    */
-  static createModel(Model, Resource, noDispatch) {
+  static createModel(Model, Resource) {
     Model.actions = Model.actions || {};
-    for (let key in Resource) {
-      if (Model.actions[key]) {
-        Model.actions[key].exec = Resource[key];
+    forEach(Resource, (exec, actionName) => {
+      if (Model.actions[actionName]) {
+        Model.actions[actionName].exec = exec;
       } else {
-        Model.actions[key] = {
-          exec: Resource[key],
-          noDispatch: noDispatch || Resource[key].noDispatch,
+        Model.actions[actionName] = {
+          exec: exec,
           callback: (nextStore, payload) => {
             return payload.data;
           }
         };
+        if (Model.prototype instanceof BaseModel) {
+          Model.prototype[actionName] = function (...args) {
+            const promise = this.execute(actionName, {exec: exec}, true, ...args);
+            return this.fromPromise(promise);
+          };
+        }
       }
-    }
+    });
     return Model;
   }
 
