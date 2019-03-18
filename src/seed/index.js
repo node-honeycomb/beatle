@@ -53,7 +53,7 @@ export default class ReduxSeed {
         if (Model.prototype instanceof BaseModel && !Model.prototype[actionName]) {
           Model.prototype[actionName] = function (...args) {
             const promise = this.execute(actionName, {exec: exec}, true, ...args);
-            const feedback = exec.successMessage || exec.errorMessage ? crud.message(exec.sucMessage, exec.errMessage) : () => {};
+            const feedback = exec.successMessage || exec.errorMessage ? crud.message(exec.successMessage, exec.errorMessage) : () => {};
             promise.then(ret => {
               feedback(null, ret);
             }, err => {
