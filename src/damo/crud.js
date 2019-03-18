@@ -109,6 +109,9 @@ const crud = {
   reset: (nextState, payload, initialState) => {
     return initialState;
   },
+  forceUpdate: (nextState) => {
+    return nextState.forceUpdate && nextState.forceUpdate();
+  },
   create: (nextState, payload, initialState, currentState, action) => {
     const state = getState(payload, action.processData);
     if (state) {
