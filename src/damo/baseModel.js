@@ -6,6 +6,7 @@
 import Ajax from '../utils/ajax';
 import cloneDeep from 'lodash/cloneDeep';
 import isPlainObject from '../core/isPlainObject';
+import crud from './crud';
 import {getProcessor, getProcessorByExec, getProcessorByGenerator, setReducers} from '../seed/action';
 
 // see: https://github.com/jayphelps/core-decorators
@@ -33,6 +34,9 @@ export const exec = (name, feedback, curdOpt = {}) => (model, actionName, descri
       callback = (nextStore, payload, initialState, currentState, opt) => {
         return reducer.call(this, nextStore, payload, initialState, currentState, curdOpt || opt);
       };
+    }
+    if (curdOpt.exec && !feedback && (curdOpt.exec.successMessage || curdOpt.exec.errorMessage)) {
+      feedback = crud.message(curdOpt.exec.successMessage, curdOpt.exec.errorMessage);
     }
     // #! exce(String) 走model.actionName调用并且更新数据到指定name属性
     if (typeof name === 'string') {
