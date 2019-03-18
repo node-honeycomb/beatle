@@ -14,6 +14,7 @@ import Saga from './saga';
 import BaseModel from '../damo/baseModel';
 import reducerImmediate from './reducerImmediate';
 import forEach from 'lodash/forEach';
+import crud from '../damo/crud';
 
 const reduxShape = {
   ajax: propTypes.object,
@@ -52,6 +53,12 @@ export default class ReduxSeed {
         if (Model.prototype instanceof BaseModel && !Model.prototype[actionName]) {
           Model.prototype[actionName] = function (...args) {
             const promise = this.execute(actionName, {exec: exec}, true, ...args);
+            const feedback = exec.successMessage || exec.errorMessage ? crud.message(exec.sucMessage, exec.errMessage) : () => {};
+            promise.then(ret => {
+              feedback(null, ret);
+            }, err => {
+              feedback(err);
+            });
             return this.fromPromise(promise);
           };
         }
