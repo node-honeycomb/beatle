@@ -110,7 +110,8 @@ const crud = {
     return initialState;
   },
   forceUpdate: (nextState) => {
-    return nextState.forceUpdate && nextState.forceUpdate();
+    nextState.forceUpdate && nextState.forceUpdate();
+    return nextState;
   },
   create: (nextState, payload, initialState, currentState, action) => {
     const state = getState(payload, action.processData);
