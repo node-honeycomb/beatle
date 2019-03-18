@@ -35,8 +35,10 @@ export const exec = (name, feedback, curdOpt = {}) => (model, actionName, descri
         return reducer.call(this, nextStore, payload, initialState, currentState, curdOpt || opt);
       };
     }
-    if (curdOpt.exec && !feedback && (curdOpt.exec.successMessage || curdOpt.exec.errorMessage)) {
-      feedback = crud.message(curdOpt.exec.successMessage, curdOpt.exec.errorMessage);
+
+    const action = this._defaultActions[actionName];
+    if (!feedback && action && (action.exec.successMessage || action.exec.errorMessage)) {
+      feedback = crud.message(action.exec.successMessage, action.exec.errorMessage);
     }
     // #! exce(String) 走model.actionName调用并且更新数据到指定name属性
     if (typeof name === 'string') {
