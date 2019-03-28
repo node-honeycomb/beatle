@@ -36,7 +36,7 @@ export const exec = (name, feedback, curdOpt = {}) => (model, actionName, descri
       };
     }
 
-    const action = this._defaultActions[actionName];
+    const action = this._actions[actionName];
     if (!feedback && action && (action.exec.successMessage || action.exec.errorMessage)) {
       feedback = crud.message(action.exec.successMessage, action.exec.errorMessage);
     }
@@ -134,7 +134,7 @@ export default class BaseModel {
     this._name = option.name;
     this.ajax = option.ajax || new Ajax();
     this._isImmutable = option.isImmutable;
-    this._defaultActions = option.actions || {};
+    this._actions = option.actions || {};
     this._saga = option.saga;
   }
 
@@ -187,8 +187,8 @@ export default class BaseModel {
               nextState[key] = {
                 callback: this._wrapperReducer(key, _callback, nextState[key])
               };
-            } else if (this._defaultActions[_callback.name]) {
-              nextState[key] = cloneDeep(this._defaultActions[_callback.name]);
+            } else if (this._actions[_callback.name]) {
+              nextState[key] = cloneDeep(this._actions[_callback.name]);
               nextState[key].callback = this._wrapperReducer(key, _callback || getData, nextState[key]);
             } else {
               nextState[key] = {
@@ -200,8 +200,8 @@ export default class BaseModel {
           } else if (nextState[key].exec) {
             let _callback = nextState[key].callback;
             if (typeof nextState[key].exec === 'string') {
-              if (this._defaultActions[nextState[key].exec]) {
-                nextState[key] = cloneDeep(this._defaultActions[nextState[key].exec]);
+              if (this._actions[nextState[key].exec]) {
+                nextState[key] = cloneDeep(this._actions[nextState[key].exec]);
               }
               _callback = _callback || nextState[key].callback;
               delete nextState[key].callback;
@@ -272,9 +272,9 @@ export default class BaseModel {
     if (!this._initialState) {
       this._initialState = cloneDeep(this.state);
     }
-    if (this._defaultActions[name] && this.state[name] === undefined && !action.exec) {
+    if (this._actions[name] && this.state[name] === undefined && !action.exec) {
       const _callback = action;
-      action = cloneDeep(this._defaultActions[name]);
+      action = cloneDeep(this._actions[name]);
       action.callback = _callback || action.callback;
     }
     let processor;

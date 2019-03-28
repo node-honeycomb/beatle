@@ -11,7 +11,6 @@ import useBasename from 'history/lib/useBasename';
 import createMemoryHistory from 'react-router/lib/createMemoryHistory';
 import useRouterHistory from 'react-router/lib/useRouterHistory';
 // import createRouterHistory from 'react-router/lib/createRouterHistory';
-import _get from 'lodash/get';
 import warning from 'fbjs/lib/warning';
 import messages from '../core/messages';
 
@@ -23,6 +22,7 @@ import route from './route';
 import modelChecker from './model';
 import getProvider from './provider';
 import Ajax from '../utils/ajax';
+import {getStateByModels, getActionsByDispatch} from '../seed/action';
 
 /**
  * ### 应用初始化依赖的配置项
@@ -31,6 +31,7 @@ import Ajax from '../utils/ajax';
  * |: ------ |: ------ |: ------ |
  * | name `String` | 应用实例名 | `app` |
  * | store `Object` | 应用数据中心的初始化数据 | `{}` |
+ * | freeze `Boolean` | 状态数据是否保持冻结不可变，store为undefined时表示冻结 | N/A |
  * | middlewares `Array` | 应用数据处理中间件，通过中间件可以变更数据结果 | `[]` |
  * | ajax `Object` | 应用接口请求对象初始化依赖的配置项 | `{}` |
  * | root `DOM` | 应用唯一挂载的DOM树节点 | `document.body` |
@@ -45,6 +46,7 @@ import Ajax from '../utils/ajax';
  */
 const beatleShape = {
   name: propTypes.string,
+  freeze: propTypes.bool,
   store: propTypes.object,
   middlewares: propTypes.array,
   ajax: propTypes.object,
@@ -175,7 +177,14 @@ export default class Beatle {
 
     const middlewares = options.middlewares || [];
     middlewares.push(this._getMiddleWareFactory());
-    this.seed = new ReduxSeed({name: this._setting.seedName, initialState: options.store, middlewares: middlewares, Models: Models, ajax: this.ajax});
+    this.seed = new ReduxSeed({
+      name: this._setting.seedName,
+      freeze: options.freeze,
+      initialState: options.store,
+      middlewares: middlewares,
+      Models: Models,
+      ajax: this.ajax
+    });
 
     // #! 自动加载路由
     if (options.autoLoadRoute && Beatle.autoLoad.loadRoutes) {
@@ -773,7 +782,7 @@ export default class Beatle {
      *
      * ```
      *  app.connect({
-     *    profile: 'user.store.profile',
+     *    profile: 'user.state.profile',
      *    getUser: 'user.actions.getUser'
      *  }, Component)
      * ```
@@ -795,103 +804,15 @@ export default class Beatle {
     const {models, actions} = ReduxSeed.getRedux(this._setting.seedName);
     return {
       flattern: flattern,
-      dataBindings: typeof bindings[0] === 'function' ? bindings[0].bind(context) : (state) => {
-        const iState = {};
-        bindings._sign = {};
-        bindings.forEach((binding) => {
-          if (typeof binding === 'string') {
-            let mState = {};
-            if (models[binding]) {
-              const store = models[binding].state || models[binding].store;
-              for (let key in store) {
-                mState[key] = state[binding][key];
-              }
-            }
-
-            if (flattern) {
-              Object.assign(iState, mState);
-            } else {
-              iState[binding] = mState;
-            }
-          } else {
-            for (let key in binding) {
-              if (bindings._sign[key]) continue;
-              if (Object(binding[key]) === binding[key]) {
-                iState[key] = binding[key];
-              } else if (typeof binding[key] === 'string') {
-                let keys = binding[key].split('.');
-                let mState = {};
-                if (models[keys[0]] && (keys[1] === 'store' || keys[1] === 'state')) {
-                  // #! see > http://lodashjs.com/docs/#_getobject-path-defaultvalue
-                  mState[key] = _get(state[keys[0]], keys.slice(2));
-                  bindings._sign[key] = true;
-                }
-                if (flattern) {
-                  Object.assign(iState, mState);
-                } else {
-                  iState[keys[0]] = mState;
-                }
-              }
-            }
-          }
+      dataBindings: typeof bindings[0] === 'function' ? bindings[0].bind(context) : () => {
+        return getStateByModels(models, bindings, flattern, {
+          state: (d) => this.seed._isImmutable ? this.seed.serialize(d) : d
         });
-        return iState;
       },
       eventBindings: typeof bindings[1] === 'function' ? (dispatch, props) => bindings[1].call(context, dispatch, props, actions) : (dispatch) => {
-        const iAction = {};
-        bindings._sign = bindings._sign || {};
-        bindings.forEach((binding) => {
-          if (typeof binding === 'string' && actions[binding]) {
-            let mAction = {};
-            for (let key in actions[binding]) {
-              mAction[key] = (...args) => {
-                const result = actions[binding][key].apply(null, args);
-                if (result && result.then) {
-                  return result;
-                } else if (typeof result === 'function') {
-                  return result(dispatch);
-                } else if (result !== undefined) {
-                  return dispatch(result);
-                }
-              };
-            }
-            if (flattern) {
-              Object.assign(iAction, mAction);
-            } else {
-              iAction[binding] = mAction;
-            }
-          } else {
-            for (let key in binding) {
-              if (bindings._sign[key]) continue;
-              if (typeof binding[key] === 'function') {
-                iAction[key] = binding[key].bind(null, dispatch);
-              } else if (typeof binding[key] === 'string') {
-                let keys = binding[key].split('.');
-                let mAction = {};
-                if (actions[keys[0]] && keys[1] === 'actions') {
-                  mAction[key] = (...args) => {
-                    const result = actions[keys[0]][keys[2]].apply(null, args);
-                    if (result && result.then) {
-                      return result;
-                    } else if (typeof result === 'function') {
-                      return result(dispatch);
-                    } else if (result !== undefined) {
-                      return dispatch(result);
-                    }
-                  };
-                  bindings._sign[key] = true;
-                }
-                if (flattern) {
-                  Object.assign(iAction, mAction);
-                } else {
-                  iAction[keys[0]] = mAction;
-                }
-              }
-            }
-          }
-        });
-        delete bindings._sign;
-        return iAction;
+        return getStateByModels(models, bindings, flattern, {
+          actions: (actions) => getActionsByDispatch(actions, dispatch)
+        }, true);
       }
     };
   }
