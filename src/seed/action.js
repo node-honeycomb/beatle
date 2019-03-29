@@ -61,7 +61,7 @@ export function getStateByModels(models, bindings, flattern, wrappers, clearCach
       if (typeof binding === 'string') {
         if (!bindings._sign[binding]) {
           mState = getStateByModel(models, binding, flattern, wrappers);
-          if (mState && !mState[bindings]) {
+          if (mState && !mState[binding]) {
             bindings._sign[binding] = true;
           }
         }
