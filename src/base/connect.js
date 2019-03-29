@@ -29,16 +29,16 @@ function deepMerge(obj, a, b, extra) {
  * + bindings绑定的数据和方法，以数据模型名称在props下增加一层属性名，需要把connect的属性合并改为深度合并
  * + context主要生成的react-context
  */
-export default function viewConnect(instance, dispatch, props = {}) {
+export default function viewConnect(instance, dispatch, props = {}, getProps) {
   function mergeProps(stateProps, dispatchProps, parentProps) {
     let nextProps;
-    if (props.getProps) {
-      Object.assign(props, props.getProps(parentProps));
-    }
     if (instance.flattern) {
       nextProps = Object.assign({}, props, stateProps, dispatchProps, parentProps);
     } else {
       nextProps = deepMerge(props, stateProps, dispatchProps, parentProps);
+    }
+    if (getProps) {
+      Object.assign(nextProps, getProps(nextProps));
     }
     nextProps.dispatch = dispatch;
     return nextProps;

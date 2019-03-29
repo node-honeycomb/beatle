@@ -14,11 +14,12 @@ function mergeRouteOptions(routeConfig) {
 export default function route(path, RouteComponent, option = {}) {
   const routeConfig = Object.assign({
     resolvePath: path,
-    path: path,
+    path: path || option.name,
     name: option.name,
     navKey: option.navKey,
     component: RouteComponent,
-    fpath: option.fpath
+    fpath: option.fpath,
+    parent: option.parent
   }, RouteComponent.routeOptions);
   // 把子路由组件的routeOptions也合并进来
   mergeRouteOptions(routeConfig);
@@ -38,6 +39,7 @@ export default function route(path, RouteComponent, option = {}) {
         getComponent: indexRoute
       }, indexRoute.routeOptions);
     } else {
+      indexRoute.component = option.fromLazy(indexRoute.component);
       const routeOptions = indexRoute.component ? indexRoute.component.routeOptions : indexRoute.getComponent.routeOptions;
       routeConfig.indexRoute = Object.assign(indexRoute, routeOptions);
     }

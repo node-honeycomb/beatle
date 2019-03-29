@@ -37,13 +37,30 @@ export default class AsyncComponent extends React.PureComponent {
     children: null
   }
 
-  componentWillMount() {
+  componentDidMount() {
+    this.mounted = true;
     this._subscription = this.props.observable.subscribe(children => {
-      this.setState({children: children});
+      if (this.mounted) {
+        this.setState({children: children});
+      }
     });
   }
 
-  componentWillUnMount() {
+  componentWillReceiveProps(nextProps) {
+    if (nextProps.observable !== this.props.observable) {
+      this
+        ._subscription
+        .unsubscribe();
+      this._subscription = nextProps.observable.subscribe(children => {
+        if (this.mounted) {
+          this.setState({children: children});
+        }
+      });
+    }
+  }
+
+  componentWillUnmount() {
+    this.mounted = false;
     this
       ._subscription
       .unsubscribe();

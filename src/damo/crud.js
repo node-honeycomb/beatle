@@ -89,7 +89,7 @@ const crud = {
   message: (sucMsg, errMsg) => {
     return (err) => {
       if (err) {
-        errMsg && crud.console.error(errMsg, err.message);
+        errMsg && crud.console.error(errMsg, err);
       } else {
         sucMsg && crud.console.success(sucMsg);
       }
@@ -108,6 +108,10 @@ const crud = {
   noop: () => {},
   reset: (nextState, payload, initialState) => {
     return initialState;
+  },
+  forceUpdate: (nextState) => {
+    nextState.forceUpdate && nextState.forceUpdate();
+    return nextState;
   },
   create: (nextState, payload, initialState, currentState, action) => {
     const state = getState(payload, action.processData);

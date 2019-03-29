@@ -151,6 +151,7 @@ Object.assign(Beatle, {
   createModel(Model, Resource) {
     if (this !== BeatlePro) {
       // for decorator model
+      // !TODO 可能有问题
       return docorators.createModel.call(Beatle, Model);
     } else {
       // #! 校验失败应该返回错误信息 see: https://github.com/facebook/prop-types/issues/142
@@ -233,7 +234,7 @@ const docorators = {
     return app.model(Model, option.Resource);
   }),
   // decorator for createModel
-  createModel: Resource => Model => {
+  createModel: (Resource) => Model => {
     return BeatlePro.createModel(Model, Resource);
   },
   // docorator for route
@@ -258,7 +259,7 @@ const docorators = {
     if (typeof app === 'string') {
       app = Beatle.getApp(app);
     }
-    return app.view(option.selector, BaseComponent, option.providers, option.bindings, option.hookActions);
+    return app.view(option.selector, BaseComponent, option.providers, option.bindings, option.hookActions, option.props, option.getProps, option.flattern);
   })
 };
 
@@ -269,7 +270,9 @@ const BeatlePro = enhancleBeatle(Beatle);
     if (!this._activeHistory) return;
     if (typeof path === 'string') {
       const routeConfig = this.route(path);
-      path = this.getResolvePath(routeConfig);
+      if (routeConfig) {
+        path = this.getResolvePath(routeConfig);
+      }
     }
     this._activeHistory[method](path, state);
   };

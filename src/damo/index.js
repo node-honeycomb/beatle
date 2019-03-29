@@ -1,8 +1,6 @@
 import immutable from 'seamless-immutable';
 import isPlainObject from 'lodash/isPlainObject';
-import warning from 'fbjs/lib/warning';
 import connect from '../base/connect';
-import logMessages from '../core/messages';
 import Injector from './injector';
 import AsyncComponent from './asyncComponent';
 import service from './service';
@@ -13,41 +11,13 @@ import isEqual from 'lodash/isEqual';
 import {fromEvent} from 'rxjs/observable/fromEvent';
 import crud from './crud';
 import ReduxSeed from '../seed';
+import {getStateByModels, getActionsByDispatch} from '../seed/action';
 
 const emitter = new EventEmitter();
 // #! 自增唯一标识
 let increment = 0;
 function guid(name) {
   return name + (++increment);
-}
-
-function getState(models, keys) {
-  let state;
-  let len = keys.length;
-  try {
-    if (len) {
-      const model = models[keys[0]];
-      if (model) {
-        state = model.state;
-        if (len === 1) {
-          const newState = Object.assign(state, model._actions);
-          state = {
-            [keys[0]]: newState
-          };
-        } else {
-          for (let i = 1; i < len; i++) {
-            state = state[keys[i]] || model._actions[keys[i]];
-          }
-        }
-      }
-    } else {
-      state = models['__pure_reducer__'].state;
-    }
-  } catch (e) {
-    warning(false, logMessages.selectError, 'select', keys.join('.'), 'damo', 'Beatle');
-    window.console.error(e);
-  }
-  return state;
 }
 
 const globalInjector = new Injector();
@@ -75,24 +45,11 @@ export default function enhanceBeatle(Beatle) {
      *
      * | 方法 | 参数类型 | 描述 |
      * |: ------ |: ------ |: ------ |
-     * | serialize(obj) `Object` | obj `Object` | 序列化数据结构，此时数据为不可变 |
-     * | deserialize(obj) `Object` | obj `Object` | 反序列化数据结构，以方便对数据进行更改 |
      * | observable(obj) `Observable` | obj `Object` | 把数据转变为可观察队列，通过Rxjs来做序列进行转换 |
      * | select(nestKey, isObservable) `Object` | nestKey `String`, isObservable `Boolean` | 直接从store中获取指定model下的数据, 可转为序列 |
      * | service(Selector: BaseSelector, Component: ReactComponent, Providers: Array) `Component` | N/A | 注册服务, 并绑定到组件 |
      * | view(Selector: BaseSelector, Component: ReactComponent, Providers: Array) `Component` | N/A | 封装组件，生成视图 |
      */
-    serialize(obj) {
-      return immutable(obj);
-    }
-
-    deserialize(obj, deep) {
-      if (obj !== undefined && obj.asMutable) {
-        return obj.asMutable({deep: deep});
-      } else {
-        return obj;
-      }
-    }
 
     observer(originData, Com) {
       if (Com) {
@@ -128,18 +85,20 @@ export default function enhanceBeatle(Beatle) {
       }
     }
 
-    select(keyStr) {
-      const seed = ReduxSeed.getRedux(this._setting.seedName);
-      const models = seed.models;
+    select(keyStr, flattern, wrappers) {
+      const {models, store} = ReduxSeed.getRedux(this._setting.seedName);
+      const allState = store.getState();
+      const dispatch = this.dispatch.bind(this);
       let state;
-      if (Array.isArray(keyStr)) {
-        state = keyStr.map(str => {
-          return getState(models, str.split('.'));
-        });
-      } else if (typeof keyStr === 'function') {
-        state = keyStr(seed.store.getState());
+      if (typeof keyStr === 'function') {
+        state = keyStr(allState);
+      } else if (keyStr) {
+        state = getStateByModels(models, [].concat(keyStr), flattern, wrappers || {
+          state: (d) => this.seed._isImmutable ? this.seed.serialize(d) : d,
+          actions: (actions) => getActionsByDispatch(actions, dispatch)
+        }, true);
       } else {
-        state = getState(models, keyStr.split('.'));
+        state = allState;
       }
       return state;
     }
@@ -166,9 +125,10 @@ export default function enhanceBeatle(Beatle) {
       this.injector.setServices(providers);
     }
 
-    view(selector, SceneComponent, providers, bindings, hookActions, props) {
+    view(selector, SceneComponent, providers, bindings, hookActions, props, getProps, flattern) {
       if (selector !== false) {
         if (selector && selector.prototype && selector.prototype.isReactComponent) {
+          getProps = props;
           props = hookActions;
           hookActions = bindings;
           bindings = providers;
@@ -183,21 +143,18 @@ export default function enhanceBeatle(Beatle) {
           selector.bindings = selector.bindings || bindings;
           selector.hookActions = selector.hookActions || hookActions;
         } else {
-          if (Object(selector) === selector) {
-            bindings = selector.bindings;
-            hookActions = selector.hookActions;
-          } else {
+          if (Object(selector) !== selector) {
             bindings = bindings || selector;
+            selector = new BaseSelector();
+            selector.bindings = [].concat(bindings || '');
           }
-          selector = new BaseSelector();
-          selector.bindings = [].concat(bindings || '');
           selector.hookActions = hookActions;
         }
         if (selector.bindings) {
-          Object.assign(selector, this.toBindings(selector.bindings, selector.flattern, selector));
+          Object.assign(selector, this.toBindings(selector.bindings, flattern || selector.flattern, selector));
         }
         // #! 绑定组件, 连接到redux
-        SceneComponent = connect(selector, this.dispatch.bind(this), props)(SceneComponent);
+        SceneComponent = connect(selector, this.dispatch.bind(this), props, getProps)(SceneComponent);
         // #! 额外注入context到组件中
 
         selector.getModel = (name) => {

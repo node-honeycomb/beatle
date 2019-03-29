@@ -13,6 +13,8 @@ import extractModules from '../core/extractModules';
 import Saga from './saga';
 import BaseModel from '../damo/baseModel';
 import reducerImmediate from './reducerImmediate';
+import forEach from 'lodash/forEach';
+import crud from '../damo/crud';
 
 const reduxShape = {
   ajax: propTypes.object,
@@ -38,18 +40,30 @@ export default class ReduxSeed {
    */
   static createModel(Model, Resource) {
     Model.actions = Model.actions || {};
-    for (let key in Resource) {
-      if (Model.actions[key]) {
-        Model.actions[key].exec = Resource[key];
+    forEach(Resource, (exec, actionName) => {
+      if (Model.actions[actionName]) {
+        Model.actions[actionName].exec = exec;
       } else {
-        Model.actions[key] = {
-          exec: Resource[key],
+        Model.actions[actionName] = {
+          exec: exec,
           callback: (nextStore, payload) => {
             return payload.data;
           }
         };
+        if (Model.prototype instanceof BaseModel && !Model.prototype[actionName]) {
+          Model.prototype[actionName] = function (...args) {
+            const promise = this.execute(actionName, {exec: exec}, true, ...args);
+            const feedback = exec.successMessage || exec.errorMessage ? crud.message(exec.successMessage, exec.errorMessage) : () => {};
+            promise.then(ret => {
+              feedback(null, ret);
+            }, err => {
+              feedback(err);
+            });
+            return this.fromPromise(promise);
+          };
+        }
       }
-    }
+    });
     return Model;
   }
 
@@ -78,7 +92,7 @@ export default class ReduxSeed {
     this._instanceName = options.name || ReduxSeed.defaultApp;
     this._ajax = options.ajax;
     this._saga = new Saga();
-    this._isImmutable = options.initialState === undefined || immutable.isImmutable(options.initialState);
+    this._isImmutable = options.freeze || options.initialState === undefined || immutable.isImmutable(options.initialState);
     this._pureReducers = [];
     this._pureReducers.state = {};
     this._incrementReducerState = {
@@ -155,19 +169,6 @@ export default class ReduxSeed {
         initialState: initialState
       }, this);
 
-      if (!Model.getAction) {
-        Model.getAction = (name) => {
-          if (name) {
-            return (...args) => Model._actions[name].apply(Model, args)(this.getStore().dispatch);
-          } else {
-            const actions = {};
-            for (let key in Model._actions) {
-              actions[key] = (...args) => Model._actions[key].apply(Model, args)(this.getStore().dispatch);
-            }
-            return actions;
-          }
-        };
-      }
       redux.rootReducer[name] = modelToReducer(Model, initialState, this._isImmutable);
       return store;
     }
@@ -195,10 +196,25 @@ export default class ReduxSeed {
    *
    * | 名称 | 参数类型 | 描述 |
    * | :------ | :------ | :------ |
+   * | serialize(obj) `Object` | obj `Object` | 序列化数据结构，此时数据为不可变 |
+   * | deserialize(obj) `Object` | obj `Object` | 反序列化数据结构，以方便对数据进行更改 |
    * | reducerBuilder | model `Object`, resource `Object` | 组合resource到model中，等同于Beatle.createModel |
    * | register | model `Object`, resource `Object` | 注册一个model到seed实例 |
    * | getActions | modelName `String` | 获取指定的seed实例下的model的行为，为空时获取所有行为 |
    */
+
+  serialize(obj) {
+    return immutable(obj);
+  }
+
+  deserialize(obj, deep) {
+    if (obj !== undefined && obj.asMutable) {
+      return obj.asMutable({deep: deep});
+    } else {
+      return obj;
+    }
+  }
+
   reducerBuilder(Models) {
     const redux = ReduxSeed.getRedux(this._instanceName);
     Models = Models && extractModules(Models);
