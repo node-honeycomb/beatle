@@ -1,4 +1,4 @@
-import PropTypes from 'prop-types';
+import React, {createContext} from 'react';
 import warning from 'fbjs/lib/warning';
 import logMessages from '../core/messages';
 
@@ -14,25 +14,22 @@ export default function service(providers, Component, {injector, globalInjector,
     return service || getParantService.call(this, name) || injector.getService(name) || globalInjector.getService(name);
   }
 
+  const childContext = createContext();
   class NewComponent extends Component {
     constructor(props, context) {
       super(props, context);
       const services = this._services = {};
-      NewComponent.childContextTypes = NewComponent.childContextTypes || {};
       if (selector) {
         services.selector = selector;
-        NewComponent.childContextTypes.selector = PropTypes.object;
       }
 
       if (Array.isArray(providers)) {
         providers.forEach(Provider => {
           warning(Provider.displayName, logMessages.displayName, 'contructor', 'service', 'Beatle');
-          NewComponent.childContextTypes[Provider.displayName] = PropTypes.object;
           services[Provider.displayName] = injector.instantiate(Provider, Provider.displayName, getService.bind(this));
         });
       } else {
         for (let name in providers) {
-          NewComponent.childContextTypes[name] = PropTypes.object;
           services[name] = injector.instantiate(providers[name], name, getService.bind(this));
         }
       }
@@ -94,16 +91,6 @@ export default function service(providers, Component, {injector, globalInjector,
       }
     }
 
-    getChildContext() {
-      // 子组件可以获取到providers注入的服务
-      if (super.getChildContext) {
-        const childContext = super.getChildContext();
-        return Object.assign(childContext, this._services);
-      } else {
-        return this._services;
-      }
-    }
-
     componentWillUnmount() {
       super.componentWillUnmount && super.componentWillUnmount();
       const services = this._services;
@@ -116,10 +103,12 @@ export default function service(providers, Component, {injector, globalInjector,
         }
       }
     }
+
+    render() {
+      const children = super.render();
+      return (<childContext.Provider value={this._services}>{children}</childContext.Provider>);
+    }
   }
-  NewComponent.contextTypes =  Object.assign(NewComponent.contextTypes, {
-    router: PropTypes.object,
-    location: PropTypes.object
-  });
+
   return NewComponent;
 }

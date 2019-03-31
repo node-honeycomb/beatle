@@ -1,6 +1,6 @@
 {
   "name": "beatle",
-  "version": "2.0.0-beta.1",
+  "version": "2.0.0-beta.3",
   "main": "./dist/core/beatle.js",
   "author": "dtboost <dtboost@aliyun.com>",
   "description": "Beatle是一套完整前端开发框架，用来构建客户端应用。",
@@ -37,8 +37,8 @@
     "rxjs": "5.5.8"
   },
   "peerDependencies": {
-    "react": ">=15.0.0",
-    "react-dom": ">=15.0.0"
+    "react": ">=16.0.0",
+    "react-dom": ">=16.0.0"
   },
   "devDependencies": {
     "react-addons-pure-render-mixin": "15.6.2",
@@ -84,8 +84,8 @@
     "mocha": "4.0.1",
     "mocha-loader": "1.1.1",
     "power-assert": "1.4.4",
-    "react": "16.7.0",
-    "react-dom": "16.7.0",
+    "react": "16.8.6",
+    "react-dom": "16.8.6",
     "redux-logger": "2.4.0",
     "style-loader": "0.19.0",
     "supertest": "1.1.0",

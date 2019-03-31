@@ -316,6 +316,7 @@ export default class Beatle {
           <IRouter {...appComponent._getRouterProps(appComponent._setting.routes)} ref={inst => {
             if (inst) {
               this._activeHistory = inst.history;
+              this.storeContainer = ReactDOM.findDOMNode(inst);
             }
           }} />
         </IProvider>);
@@ -885,6 +886,8 @@ export default class Beatle {
       <IRouter {...this._getRouterProps(routes, basePath)} ref={inst => {
         if (inst) {
           this._activeHistory = inst.history;
+          /* eslint-disable react/no-find-dom-node */
+          this.storeContainer = ReactDOM.findDOMNode(inst);
         }
       }} />
     </IProvider>);
