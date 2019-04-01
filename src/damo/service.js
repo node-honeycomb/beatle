@@ -14,8 +14,10 @@ export default function service(providers, Component, {injector, globalInjector,
     return service || getParantService.call(this, name) || injector.getService(name) || globalInjector.getService(name);
   }
 
-  const childContext = createContext();
   class NewComponent extends Component {
+    static displayName = Component.displayName || Component.name;
+    static childContext = createContext();
+
     constructor(props, context) {
       super(props, context);
       const services = this._services = {};
@@ -90,7 +92,7 @@ export default function service(providers, Component, {injector, globalInjector,
         }
       }
     }
-
+    
     componentWillUnmount() {
       super.componentWillUnmount && super.componentWillUnmount();
       const services = this._services;
@@ -106,7 +108,7 @@ export default function service(providers, Component, {injector, globalInjector,
 
     render() {
       const children = super.render();
-      return (<childContext.Provider value={this._services}>{children}</childContext.Provider>);
+      return (<NewComponent.childContext.Provider value={this._services}>{children}</NewComponent.childContext.Provider>);
     }
   }
 
