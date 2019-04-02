@@ -24,7 +24,7 @@
     "history": "4.7.2",
     "redux-saga": "0.16.2",
     "react-redux": "6.0.0",
-    "react-router-dom": "5.0.0",
+    "react-router": "5.0.0",
     "react-router-config": "5.0.0",
     "react-router-redux": "4.0.8",
     "redux": "4.0.1",

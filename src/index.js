@@ -2,7 +2,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import enhancleBeatle from './damo/index';
 import Beatle from './base/beatle';
-import {Link} from 'react-router-dom';
+import {Link} from 'react-router';
 import Ajax from './utils/ajax';
 import Poller from './utils/poller';
 import ReduxSeed from './seed';

@@ -12,7 +12,7 @@ const vendors = [
   'react-redux',
   'react-router',
   'redux-router',
-  'react-router-dom',
+  'react-router',
   'react-router-config',
   'react-router-redux',
   'redux-logger',
