@@ -92,7 +92,7 @@ export default function service(providers, Component, {injector, globalInjector,
         }
       }
     }
-    
+
     componentWillUnmount() {
       super.componentWillUnmount && super.componentWillUnmount();
       const services = this._services;

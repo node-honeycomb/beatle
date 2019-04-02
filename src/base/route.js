@@ -1,8 +1,8 @@
 import React from 'react';
 
 function mergeRouteOptions(routeConfig) {
-  if (routeConfig.childRoutes) {
-    routeConfig.childRoutes.forEach(child => {
+  if (routeConfig.routes) {
+    routeConfig.routes.forEach(child => {
       if (child.component && child.component.routeOptions) {
         mergeRouteOptions(Object.assign(child, child.component.routeOptions));
       }

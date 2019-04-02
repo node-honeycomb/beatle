@@ -316,6 +316,7 @@ export default class Beatle {
           <IRouter {...appComponent._getRouterProps(appComponent._setting.routes)} ref={inst => {
             if (inst) {
               this._activeHistory = inst.history;
+              /* eslint-disable react/no-find-dom-node */
               this.storeContainer = ReactDOM.findDOMNode(inst);
             }
           }} />
@@ -402,8 +403,8 @@ export default class Beatle {
         if (item.component && item.component.routeOptions) {
           Object.assign(item, item.component.routeOptions);
         }
-        if (item.childRoutes) {
-          this.setRoutes(item.childRoutes, null, item);
+        if (item.routes) {
+          this.setRoutes(item.routes, null, item);
         }
       });
     } else {
@@ -571,8 +572,8 @@ export default class Beatle {
       // #! 设置路由
       if (routeConfig) {
         RouteComponent.routeOptions = Object.assign(RouteComponent.routeOptions || {}, routeConfig);
-        if (routeConfig.childRoutes) {
-          this.setRoutes(routeConfig.childRoutes, null, routeConfig);
+        if (routeConfig.routes) {
+          this.setRoutes(routeConfig.routes, null, routeConfig);
         }
       }
       const childRoute = route(path, RouteComponent, {
@@ -674,7 +675,7 @@ export default class Beatle {
             // 当前路由路径来决定应该在哪个子路由下
             while ((key = keys.shift()) && (temp = children.find((item) => item.name === key))) {
               parentRoute = temp;
-              children = parentRoute.childRoutes || [];
+              children = parentRoute.routes || [];
             }
           }
           // #! 不存在父级路由，则直接挂在一级路由下
@@ -682,11 +683,11 @@ export default class Beatle {
             parentRoute = children.find(function (item) {
               return item.name === SEP;
             });
-            children = parentRoute.childRoutes || [];
+            children = parentRoute.routes || [];
           }
 
           if (parentRoute) {
-            parentRoute.childRoutes = parentRoute.childRoutes || [];
+            parentRoute.routes = parentRoute.routes || [];
             childRoute = route(parentRoute.path === navKey ? null : navKey + '/' + name, Comp, {
               name: name,
               navKey: navKey,
@@ -697,7 +698,7 @@ export default class Beatle {
               fromLazy: com => Beatle.fromLazy(com, this)
             });
             if (childRoute) {
-              this._pushRoute(parentRoute.childRoutes, childRoute);
+              this._pushRoute(parentRoute.routes, childRoute);
             }
           } else {
             childRoute = route(null, Comp, {
@@ -886,7 +887,6 @@ export default class Beatle {
       <IRouter {...this._getRouterProps(routes, basePath)} ref={inst => {
         if (inst) {
           this._activeHistory = inst.history;
-          /* eslint-disable react/no-find-dom-node */
           this.storeContainer = ReactDOM.findDOMNode(inst);
         }
       }} />

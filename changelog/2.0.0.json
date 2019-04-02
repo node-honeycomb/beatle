@@ -1,0 +1,6 @@
+{
+  "log": [
+    "breaking changes",
+    "升级react16.x, 路由设置变更，子路由routes而不是childRoutes",
+  ]
+}
