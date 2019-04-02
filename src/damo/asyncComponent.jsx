@@ -50,9 +50,11 @@ export default class AsyncComponent extends React.PureComponent {
     this.subscribe();
   }
 
-  componentDidUpdate() {
-    this._subscription.unsubscribe();
-    this.subscribe();
+  componentDidUpdate(prevProps) {
+    if (this.props.observable !== prevProps.observable) {
+      this._subscription.unsubscribe();
+      this.subscribe();
+    }
   }
 
   componentWillUnmount() {

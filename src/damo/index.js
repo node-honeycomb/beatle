@@ -1,4 +1,3 @@
-import immutable from 'seamless-immutable';
 import isPlainObject from 'lodash/isPlainObject';
 import connect from '../base/connect';
 import Injector from './injector';
