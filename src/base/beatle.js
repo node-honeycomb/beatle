@@ -7,7 +7,7 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import propTypes from 'prop-types';
 import {BrowserRouter, HashRouter, MemoryRouter, Router, widthRouter} from 'react-router-dom';
-import {renderRoutes} from 'react-router-config';
+import renderRoutes from '../core/renderRoutes';
 import warning from 'fbjs/lib/warning';
 import messages from '../core/messages';
 
