@@ -1,6 +1,6 @@
 {
   "name": "beatle",
-  "version": "2.0.0-rc.6",
+  "version": "2.0.0-rc.7",
   "main": "./dist/core/beatle.js",
   "author": "dtboost <dtboost@aliyun.com>",
   "description": "Beatle是一套完整前端开发框架，用来构建客户端应用。",
