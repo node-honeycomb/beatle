@@ -16,7 +16,7 @@ export default function renderRoutes(routes, extraProps, switchProps) {
       strict={route.strict}
       render={(props) => {
         const newProps = Object.assign({}, props, extraProps, {route: route});
-        newProps.children = renderRoutes(newProps.routes, newProps.extraProps, newProps.switchProps);
+        newProps.children = renderRoutes(route.routes, route.extraProps, route.switchProps);
         return route.render ? route.render(newProps) : (<route.component {...newProps} />);
       }}
     ></Route>);
