@@ -36,9 +36,10 @@ export default function renderRoutes(bastPath, routes, extraProps, switchProps) 
   return routes ? (<Switch key="switch" {...switchProps}>{routes.map(function (route, i) {
     const exact = route.exact || !route.routes || !route.routes.length;
     const routeProps = {
-      path: path.normalize(bastPath, route.path || route.name),
+      path: path.normalize(bastPath + '/' + (route.path || route.name)),
       exact: exact,
-      strict: route.strict
+      strict: route.strict,
+      route: route
     };
     routeProps.render = function render(props) {
       props.route = route;
