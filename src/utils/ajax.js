@@ -356,7 +356,8 @@ export default class Ajax {
       xhr = fetch(ajaxOptions.url, ajaxOptions).then((response) => {
         beforeResponse = beforeResponse || this.set('beforeResponse');
         return beforeResponse(response, ajaxOptions, xhr);
-      }).catch(err => {
+      });
+      xhr.catch(err => {
         callback && callback(err, null, xhr);
       });
     }

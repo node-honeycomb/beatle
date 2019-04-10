@@ -24,7 +24,7 @@ import reducerImmediate from './reducerImmediate';
 function getStateByModel(models, binding, flattern, wrappers) {
   const keys = binding.split('.');
   const modelName = keys.shift();
-  const model = models[modelName];
+  const model = models[modelName] || {};
   let iState;
   let wrapper;
   let name;
