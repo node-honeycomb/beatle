@@ -9,11 +9,12 @@ export default class StateObserver {
         this[key] = modelState[key];
         Object.defineProperty(this, key, {
           get() {
-            if (Object(modelState[key]) === modelState[key]) {
-              return new StateObserver(storeState[key], modelState[key]);
-            } else {
-              return modelState[key];
-            }
+            // if (Object(modelState[key]) === modelState[key]) {
+            //   return new StateObserver(storeState[key], modelState[key]);
+            // } else {
+            //   return modelState[key];
+            // }
+            return modelState[key];
           },
           set(v) {
             if (storeState.asMutable) {
