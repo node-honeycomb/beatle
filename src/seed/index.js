@@ -204,7 +204,7 @@ export default class ReduxSeed {
    */
 
   serialize(obj) {
-    return immutable(obj);
+    return obj && immutable(obj);
   }
 
   deserialize(obj, deep) {
