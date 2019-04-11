@@ -13,6 +13,7 @@ import messages from '../core/messages';
 
 import isPlainObject from '../core/isPlainObject';
 import extractModules from '../core/extractModules';
+import isReactComponent from '../core/isReactComponent';
 import ReduxSeed from '../seed';
 import connect from './connect';
 import route from './route';
@@ -800,7 +801,7 @@ export default class Beatle {
      *  }, Component)
      * ```
      */
-    if (models.prototype && models.prototype.isReactComponent) {
+    if (isReactComponent(models)) {
       SceneComponent = models;
       if (SceneComponent.getState) {
         models = (store, props) => SceneComponent.getState(store['__pure_reducer__'], props);
@@ -870,7 +871,7 @@ export default class Beatle {
     }
     if (typeof basePath === 'function') {
       // router, renderCb
-      if (basePath.prototype && basePath.prototype.isReactComponent) {
+      if (isReactComponent(basePath)) {
         IRouter = basePath;
         basePath = null;
       } else {

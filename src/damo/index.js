@@ -11,6 +11,7 @@ import {fromEvent} from 'rxjs/observable/fromEvent';
 import crud from './crud';
 import ReduxSeed from '../seed';
 import {getStateByModels, getActionsByDispatch} from '../seed/action';
+import isReactComponent from '../core/isReactComponent';
 
 const emitter = new EventEmitter();
 // #! 自增唯一标识
@@ -125,8 +126,9 @@ export default function enhanceBeatle(Beatle) {
     }
 
     view(selector, SceneComponent, providers, bindings, hookActions, props, getProps, flattern) {
+      let newComponent = SceneComponent;
       if (selector !== false) {
-        if (selector && selector.prototype && selector.prototype.isReactComponent) {
+        if (selector && isReactComponent(selector)) {
           getProps = props;
           props = hookActions;
           hookActions = bindings;
@@ -153,7 +155,7 @@ export default function enhanceBeatle(Beatle) {
           Object.assign(selector, this.toBindings(selector.bindings, flattern || selector.flattern, selector));
         }
         // #! 绑定组件, 连接到redux
-        SceneComponent = connect(selector, this.dispatch.bind(this), props, getProps)(SceneComponent);
+        newComponent = connect(selector, this.dispatch.bind(this), props, getProps)(SceneComponent);
         // #! 额外注入context到组件中
 
         selector.getModel = (name) => {
@@ -161,11 +163,11 @@ export default function enhanceBeatle(Beatle) {
         };
       }
 
-      return service(providers, SceneComponent, {
+      return service(providers, newComponent, {
         injector: this.injector,
         globalInjector: globalInjector,
         selector: selector
-      });
+      }, SceneComponent);
     }
   };
 }

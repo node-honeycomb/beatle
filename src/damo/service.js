@@ -1,8 +1,10 @@
 import React, {createContext} from 'react';
 import warning from 'fbjs/lib/warning';
 import logMessages from '../core/messages';
+import hoistNonReactStatics from 'hoist-non-react-statics';
 
-export default function service(providers, Component, {injector, globalInjector, selector}) {
+export default function service(providers, Component, {injector, globalInjector, selector}, OriginComponent) {
+  OriginComponent = OriginComponent || Component;
   // + 获取HOC包装的组件的实例 > see:
   // https://github.com/RubaXa/Sortable/issues/713#issuecomment-169668921
   function getParantService(name) {
@@ -14,8 +16,7 @@ export default function service(providers, Component, {injector, globalInjector,
     return service || getParantService.call(this, name) || injector.getService(name) || globalInjector.getService(name);
   }
 
-  class NewComponent extends Component {
-    static displayName = Component.displayName || Component.name;
+  class NewComponent extends React.Component {
     static childContext = createContext();
 
     constructor(props, context) {
@@ -69,19 +70,23 @@ export default function service(providers, Component, {injector, globalInjector,
           if (selector.hookActions) {
             selector.hookActions.forEach(action => {
               let model;
-              if (typeof action === 'string') {
-                model = selector.getModel(selector.bindings[0]);
-                const name = action;
-                action = {
-                  name: name
-                };
+              if (typeof action === 'function') {
+                action(this.props, this.context);
               } else {
-                model = typeof action.model === 'string' ? selector.getModel(action.model) : action.model || selector.getModel(selector.bindings[0]);
-              }
-              if (model && model[action.name]) {
-                const params = action.getParams ? action.getParams(this.props, this.context) : action.params;
-                if (params !== false) {
-                  model[action.name](params);
+                if (typeof action === 'string') {
+                  model = selector.getModel(selector.bindings[0]);
+                  const name = action;
+                  action = {
+                    name: name
+                  };
+                } else {
+                  model = typeof action.model === 'string' ? selector.getModel(action.model) : action.model || selector.getModel(selector.bindings[0]);
+                }
+                if (model && model[action.name]) {
+                  const params = action.getParams ? action.getParams(this.props, this.context) : action.params;
+                  if (params !== false) {
+                    model[action.name](params);
+                  }
                 }
               }
             });
@@ -107,10 +112,9 @@ export default function service(providers, Component, {injector, globalInjector,
     }
 
     render() {
-      const children = super.render();
-      return (<NewComponent.childContext.Provider value={this._services}>{children}</NewComponent.childContext.Provider>);
+      return (<NewComponent.childContext.Provider value={this._services}><Component {...this.props} /></NewComponent.childContext.Provider>);
     }
   }
 
-  return NewComponent;
+  return hoistNonReactStatics(NewComponent, OriginComponent);
 }

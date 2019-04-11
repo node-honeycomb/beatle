@@ -84,6 +84,6 @@ export default function viewConnect(instance, dispatch, props = {}, getProps) {
       };
     }
 
-    return withRouter(connect(mergeStateToProps, mergeActionToProps, mergeProps, {forwardRef: true})(BaseComponent));
+    return connect(mergeStateToProps, mergeActionToProps, mergeProps, {forwardRef: true})(BaseComponent);
   };
 }

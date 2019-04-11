@@ -1,5 +1,5 @@
 import React from 'react';
-
+import isReactComponent from '../core/isReactComponent';
 function mergeRouteOptions(routeConfig) {
   if (routeConfig.routes) {
     routeConfig.routes.forEach(child => {
@@ -30,7 +30,7 @@ export default function route(path, RouteComponent, option = {}) {
 
   const indexRoute = routeConfig.indexRoute;
   if (indexRoute) {
-    if (indexRoute.prototype && indexRoute.prototype.isReactComponent) {
+    if (isReactComponent(indexRoute)) {
       routeConfig.indexRoute = Object.assign({
         component: indexRoute
       }, indexRoute.routeOptions);
@@ -58,7 +58,7 @@ export default function route(path, RouteComponent, option = {}) {
     const element = routeConfig.component;
     routeConfig.component = () => element;
     // function component, 必须存在props作为第一个参数
-  } else if (!routeConfig.component.prototype.isReactComponent && routeConfig.component.toString().split(')')[0].split('(').pop() !== 'props') {
+  } else if (!isReactComponent(routeConfig.component)) {
     routeConfig.getComponent = routeConfig.component;
     delete routeConfig.component;
   }
