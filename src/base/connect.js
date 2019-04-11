@@ -1,5 +1,4 @@
 import {connect} from 'react-redux';
-import {withRouter} from 'react-router-dom';
 
 function deepMerge(obj, a, b, extra) {
   obj = Object.assign({}, obj);
