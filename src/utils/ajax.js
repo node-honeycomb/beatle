@@ -379,7 +379,7 @@ export default class Ajax {
       }
       return result;
     }, (err) => {
-      callback && callback(err, null, xhr);
+      return callback && callback(err, null, xhr);
     });
     return xhr;
   }
