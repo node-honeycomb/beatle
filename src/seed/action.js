@@ -30,10 +30,13 @@ function getStateByModel(models, binding, flattern, wrappers) {
   let name;
   if (keys.length) {
     wrapper = wrappers[keys[0]];
-    iState = wrapper(model[keys.shift()]);
-    name = keys.shift();
-    while (name) {
-      iState = iState[keys.shift()];
+    if (wrapper) {
+      iState = wrapper(model[keys.shift()]);
+      name = keys.shift();
+      while (name) {
+        iState = iState[name];
+        name = keys.shift();
+      }
     }
   } else {
     iState = {};
