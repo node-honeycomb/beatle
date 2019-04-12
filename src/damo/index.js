@@ -96,7 +96,7 @@ export default function enhanceBeatle(Beatle) {
         state = getStateByModels(models, [].concat(keyStr), flattern, wrappers || {
           state: (d) => this.seed._isImmutable ? this.seed.serialize(d) : d,
           actions: (actions) => getActionsByDispatch(actions, dispatch)
-        }, true);
+        }, {});
       } else {
         state = allState;
       }

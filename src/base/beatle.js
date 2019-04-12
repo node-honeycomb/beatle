@@ -819,14 +819,17 @@ export default class Beatle {
     return {
       flattern: flattern,
       dataBindings: typeof bindings[0] === 'function' ? bindings[0].bind(context) : () => {
+        bindings._sign = {};
         return getStateByModels(models, bindings, flattern, {
           state: (d) => this.seed._isImmutable ? this.seed.serialize(d) : d
-        });
+        }, bindings._sign);
       },
       eventBindings: typeof bindings[1] === 'function' ? (dispatch, props) => bindings[1].call(context, dispatch, props, actions) : (dispatch) => {
-        return getStateByModels(models, bindings, flattern, {
+        const actions = getStateByModels(models, bindings, flattern, {
           actions: (actions) => getActionsByDispatch(actions, dispatch)
-        }, true);
+        }, bindings._sign);
+        delete bindings._sign;
+        return actions;
       }
     };
   }

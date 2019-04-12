@@ -21,9 +21,10 @@ import reducerImmediate from './reducerImmediate';
  * bindings = [{name: {test: 1}}], flattern = false|true
  * => {name: {test: 1}}
  */
-function getStateByModel(models, binding, flattern, wrappers) {
+function getStateByModel(models, binding, flattern, wrappers, attrKey) {
   const keys = binding.split('.');
   const modelName = keys.shift();
+  attrKey = attrKey || modelName;
   const model = models[modelName] || {};
   let iState;
   let wrapper;
@@ -49,36 +50,37 @@ function getStateByModel(models, binding, flattern, wrappers) {
     return iState;
   } else {
     return {
-      [modelName]: iState
+      [attrKey]: iState
     };
   }
 }
 
-export function getStateByModels(models, bindings, flattern, wrappers, clearCache) {
+export function getStateByModels(models, bindings, flattern, wrappers, cacheMap) {
   let stateProps = {};
   let keys;
   let mState;
   try {
-    bindings._sign = bindings._sign || {};
     bindings.forEach((binding) => {
       if (typeof binding === 'string') {
-        if (!bindings._sign[binding]) {
+        if (!cacheMap[binding]) {
           mState = getStateByModel(models, binding, flattern, wrappers);
           if (mState && !mState[binding]) {
-            bindings._sign[binding] = true;
+            cacheMap[binding] = true;
           }
         }
       } else {
         mState = {};
         for (let modelName in binding) {
-          if (!bindings._sign[modelName]) {
+          if (!cacheMap[modelName]) {
             if (Object(binding[modelName]) === binding[modelName]) {
               mState[modelName] = binding[modelName];
             } else if (typeof binding[modelName] === 'string') {
-              mState[modelName] = getStateByModel(models, binding[modelName], false, wrappers);
+              Object.assign(mState, getStateByModel(models, binding[modelName], false, wrappers, modelName));
             }
-            if (mState) {
-              bindings._sign[modelName] = true;
+            if (mState[modelName] === undefined) {
+              delete mState[modelName];
+            } else {
+              cacheMap[modelName] = true;
             }
           }
         }
@@ -88,9 +90,6 @@ export function getStateByModels(models, bindings, flattern, wrappers, clearCach
   } catch (e) {
     warning(false, messages.selectError, 'select', keys, 'seed', 'Beatle');
     window.console.error(e);
-  }
-  if (clearCache) {
-    delete bindings._sign;
   }
   return stateProps;
 }

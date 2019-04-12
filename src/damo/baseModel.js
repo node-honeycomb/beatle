@@ -138,10 +138,6 @@ export default class BaseModel {
     this._saga = option.saga;
   }
 
-  get actions() {
-    return this._actions;
-  }
-
   _wrapperReducer(name, reducer, action) {
     if (isPlainObject(reducer)) {
       const map = {};

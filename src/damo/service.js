@@ -1,10 +1,8 @@
 import React, {createContext} from 'react';
 import warning from 'fbjs/lib/warning';
 import logMessages from '../core/messages';
-import hoistNonReactStatics from 'hoist-non-react-statics';
 
-export default function service(providers, Component, {injector, globalInjector, selector}, OriginComponent) {
-  OriginComponent = OriginComponent || Component;
+export default function service(providers, Component, {injector, globalInjector, selector}) {
   // + 获取HOC包装的组件的实例 > see:
   // https://github.com/RubaXa/Sortable/issues/713#issuecomment-169668921
   function getParantService(name) {
@@ -16,7 +14,8 @@ export default function service(providers, Component, {injector, globalInjector,
     return service || getParantService.call(this, name) || injector.getService(name) || globalInjector.getService(name);
   }
 
-  class NewComponent extends React.Component {
+  class NewComponent extends Component {
+    static displayName = Component.displayName || Component.name;
     static childContext = createContext();
 
     constructor(props, context) {
@@ -65,32 +64,43 @@ export default function service(providers, Component, {injector, globalInjector,
           }
         }
 
-        // 完成后触发钩子函数
-        try {
-          if (selector.hookActions) {
-            selector.hookActions.forEach(action => {
-              let model;
-              if (typeof action === 'function') {
-                action(this.props, this.context);
-              } else {
-                if (typeof action === 'string') {
-                  model = selector.getModel(selector.bindings[0]);
-                  const name = action;
-                  action = {
-                    name: name
-                  };
+        if (selector.hookActions) {
+          // hack react-redux 6.x
+          // see: https://github.com/reduxjs/react-redux/blob/fa5857281a37545c7c036fb2499159b865b1c57d/src/components/connectAdvanced.js
+          this._hadHook = false;
+          const selectChildElement = this.selectChildElement;
+          this.selectChildElement = (derivedProps, forwardedRef) => {
+            if (!this._hadHook) {
+              this._hadHook = true;
+              selector.hookActions.forEach(action => {
+                let model;
+                if (typeof action === 'function') {
+                  action(derivedProps, this.context);
                 } else {
-                  model = typeof action.model === 'string' ? selector.getModel(action.model) : action.model || selector.getModel(selector.bindings[0]);
-                }
-                if (model && model[action.name]) {
-                  const params = action.getParams ? action.getParams(this.props, this.context) : action.params;
-                  if (params !== false) {
-                    model[action.name](params);
+                  if (typeof action === 'string') {
+                    model = selector.getModel(selector.bindings[0]);
+                    const name = action;
+                    action = {
+                      name: name
+                    };
+                  } else {
+                    model = typeof action.model === 'string' ? selector.getModel(action.model) : action.model || selector.getModel(selector.bindings[0]);
+                  }
+                  if (model && model[action.name]) {
+                    const params = action.getParams ? action.getParams(derivedProps, this.context) : action.params;
+                    if (params !== false) {
+                      model[action.name](params);
+                    }
                   }
                 }
-              }
-            });
-          }
+              });
+            }
+            return selectChildElement.call(this, derivedProps, forwardedRef);
+          };
+        }
+
+        // 完成后触发钩子函数
+        try {
           selector.initialize && selector.initialize(this.props);
         } catch (e) {
           window.console.error(e);
@@ -112,9 +122,10 @@ export default function service(providers, Component, {injector, globalInjector,
     }
 
     render() {
-      return (<NewComponent.childContext.Provider value={this._services}><Component {...this.props} /></NewComponent.childContext.Provider>);
+      const children = super.render();
+      return (<NewComponent.childContext.Provider value={this._services}>{children}</NewComponent.childContext.Provider>);
     }
   }
 
-  return hoistNonReactStatics(NewComponent, OriginComponent);
+  return NewComponent;
 }

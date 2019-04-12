@@ -1,4 +1,5 @@
 import {connect} from 'react-redux';
+import hoistStatics from 'hoist-non-react-statics';
 
 function deepMerge(obj, a, b, extra) {
   obj = Object.assign({}, obj);
@@ -83,6 +84,8 @@ export default function viewConnect(instance, dispatch, props = {}, getProps) {
       };
     }
 
-    return connect(mergeStateToProps, mergeActionToProps, mergeProps, {forwardRef: true})(BaseComponent);
+    const Connect = connect(mergeStateToProps, mergeActionToProps, mergeProps)(BaseComponent);
+    Connect.contextTypes = BaseComponent.contextTypes;
+    return hoistStatics(Connect, BaseComponent);
   };
 }
