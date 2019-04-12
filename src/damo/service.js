@@ -69,13 +69,17 @@ export default function service(providers, Component, {injector, globalInjector,
           // see: https://github.com/reduxjs/react-redux/blob/fa5857281a37545c7c036fb2499159b865b1c57d/src/components/connectAdvanced.js
           this._hadHook = false;
           const selectChildElement = this.selectChildElement;
+          const newProps = {};
           this.selectChildElement = (derivedProps, forwardedRef) => {
-            if (!this._hadHook) {
-              this._hadHook = true;
+            if (!this._hookProps) {
+              this._hookProps = {};
               selector.hookActions.forEach(action => {
                 let model;
                 if (typeof action === 'function') {
-                  action(derivedProps, this.context);
+                  const ret = action(derivedProps, this.context);
+                  if (ret !== undefined) {
+                    Object.assign(this._hookProps, ret);
+                  }
                 } else {
                   if (typeof action === 'string') {
                     model = selector.getModel(selector.bindings[0]);
@@ -95,6 +99,7 @@ export default function service(providers, Component, {injector, globalInjector,
                 }
               });
             }
+            Object.assign(derivedProps, this._hookProps);
             return selectChildElement.call(this, derivedProps, forwardedRef);
           };
         }
