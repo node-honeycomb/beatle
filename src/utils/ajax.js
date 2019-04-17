@@ -98,7 +98,15 @@ export default class Ajax {
    * | afterResponse(fn) | fn `Function` | 接口结果后处理 |
    * | request(options) | options `Object` | 接口请求处理逻辑 |
    */
-  _setting = {};
+  _setting = {
+    query: {}
+  };
+  setQuery(query) {
+    if (this._setting.query) {
+      warning(false, messages.duplicateProp, 'setQuery', typeof query, 'query', 'Beatle.Ajax');
+    }
+    this._setting.query = query;
+  }
   setHeader(headers) {
     if (this._setting.headers) {
       warning(false, messages.duplicateProp, 'setHeader', typeof headers, 'headers', 'Beatle.Ajax');
@@ -173,10 +181,10 @@ export default class Ajax {
     const normalize = ajaxOptions.normalize || this.set('normalize');
     ajaxOptions.originUrl = ajaxOptions.url;
     if (mutable && normalize) {
-      const data = isPlainObject(ajaxOptions.data) ? Object.assign({}, ajaxOptions.data) : ajaxOptions.data;
+      const data = isPlainObject(ajaxOptions.data) ? Object.assign({}, this._setting.query, ajaxOptions.data) : ajaxOptions.data;
       ajaxOptions.url = substitute(ajaxOptions.url, data, true, delimeter);
     } else if (ajaxOptions.params || ajaxOptions.data) {
-      ajaxOptions.url = substitute(ajaxOptions.url, ajaxOptions.params || ajaxOptions.data, false, delimeter);
+      ajaxOptions.url = substitute(ajaxOptions.url, Object.assign({}, this._setting.query, ajaxOptions.params || ajaxOptions.data), false, delimeter);
     }
   }
 
@@ -191,7 +199,7 @@ export default class Ajax {
     }
     if (needMerge) {
       // 合并ajaxOptions.data到query，重复的key被data中的值替换
-      u.query = Object.assign(u.query || {}, ajaxOptions.data);
+      u.query = Object.assign(u.query || {}, this._setting.query, ajaxOptions.data);
       // 去除search属性，在format函数中，如果存在search，那么query解析为queryStr不被接收
       const query = qs.stringify(u.query, ajaxOptions.qsOption);
       u.search = (query && ('?' + query)) || '';
