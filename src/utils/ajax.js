@@ -101,9 +101,9 @@ export default class Ajax {
   _setting = {
     query: {}
   };
-  setQuery(query) {
+  query(query) {
     if (this._setting.query) {
-      warning(false, messages.duplicateProp, 'setQuery', typeof query, 'query', 'Beatle.Ajax');
+      warning(false, messages.duplicateProp, 'query', typeof query, 'query', 'Beatle.Ajax');
     }
     this._setting.query = query;
   }
