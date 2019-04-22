@@ -52,7 +52,7 @@ export default function enhanceBeatle(Beatle) {
      */
 
     observer(originData, Com) {
-      if (isReactComponent(Com)) {
+      if (Com && isReactComponent(Com)) {
         return this.connect(originData, Com, isPlainObject(originData));
       }
       if (!originData) {
@@ -71,11 +71,16 @@ export default function enhanceBeatle(Beatle) {
           unsubscribe = store.subscribe(() => {
             const _states = this.select(str);
             if (Array.isArray(states) && states.filter((state, index) => !isEqual(state, _states[index])).length || !isEqual(_states, states)) {
-              // 第一次进来后，后续要判断新的变化才进来
-              callback(_states, states);
-              states = _states;
+              // 第一次进来后，后续要判断新的变化才
+              const nextState = _states;
               emitter.emit(eventName, _states && _states.asMutable ? _states.asMutable({deep: true}) : _states);
-              !callback && trySubscribe();
+              if (callback) {
+                callback(nextState, states);
+                states = nextState;
+              } else {
+                states = nextState;
+                trySubscribe();
+              }
             }
           });
         };
@@ -87,7 +92,7 @@ export default function enhanceBeatle(Beatle) {
       }
     }
 
-    select(keyStr, flattern, wrappers) {
+    select(keyStr, noFlattern, wrappers) {
       const {models, store} = ReduxSeed.getRedux(this._setting.seedName);
       const allState = store.getState();
       const dispatch = this.dispatch.bind(this);
@@ -95,7 +100,7 @@ export default function enhanceBeatle(Beatle) {
       if (typeof keyStr === 'function') {
         state = keyStr(allState);
       } else if (keyStr) {
-        state = getStateByModels(models, [].concat(keyStr), flattern, wrappers || {
+        state = getStateByModels(models, [].concat(keyStr), !noFlattern, wrappers || {
           state: (d) => this.seed._isImmutable ? this.seed.serialize(d) : d,
           actions: (actions) => getActionsByDispatch(actions, dispatch)
         }, {});

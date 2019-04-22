@@ -197,7 +197,7 @@ class Root extends Component {
           maxProgress={95}
           progressIncrease={10}
         />
-        {app.select('user.profile', true).render(profile => (<h1>Welcome back: {profile.login}</h1>))}
+        {app.select('user.profile').render(profile => (<h1>Welcome back: {profile.login}</h1>))}
         <h5>List Test</h5>
         <div>当前用户：{this.props.user.name}</div>
         <ul>
