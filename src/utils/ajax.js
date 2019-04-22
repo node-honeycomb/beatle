@@ -76,6 +76,8 @@ export default class Ajax {
     return new Ajax().request(ajaxOptions);
   }
 
+  static query = {}
+
   constructor(options = {}) {
     if (options.origin) {
       this._uri = urllib.parse(options.origin);
@@ -101,12 +103,6 @@ export default class Ajax {
   _setting = {
     query: {}
   };
-  query(query) {
-    if (this._setting.query) {
-      warning(false, messages.duplicateProp, 'query', typeof query, 'query', 'Beatle.Ajax');
-    }
-    this._setting.query = query;
-  }
   setHeader(headers) {
     if (this._setting.headers) {
       warning(false, messages.duplicateProp, 'setHeader', typeof headers, 'headers', 'Beatle.Ajax');
@@ -182,19 +178,21 @@ export default class Ajax {
   }
 
   _substitute(ajaxOptions, mutable) {
+    const iquery = this.set('query');
     const delimeter = this.set('delimeter');
     const normalize = ajaxOptions.normalize || this.set('normalize');
     ajaxOptions.originUrl = ajaxOptions.url;
     if (mutable && normalize) {
-      const data = isPlainObject(ajaxOptions.data) ? Object.assign({}, this._setting.query, ajaxOptions.data) : ajaxOptions.data;
+      const data = isPlainObject(ajaxOptions.data) ? Object.assign({}, iquery, ajaxOptions.data) : ajaxOptions.data;
       ajaxOptions.url = substitute(ajaxOptions.url, data, true, delimeter);
     } else if (ajaxOptions.params || ajaxOptions.data) {
-      ajaxOptions.url = substitute(ajaxOptions.url, Object.assign({}, this._setting.query, ajaxOptions.params || ajaxOptions.data), !ajaxOptions.params, delimeter);
+      ajaxOptions.url = substitute(ajaxOptions.url, Object.assign({}, iquery, ajaxOptions.params || ajaxOptions.data), !ajaxOptions.params, delimeter);
     }
   }
 
   // #! 走params形式包装ajaxOptions
   _formatQuery(ajaxOptions, needMerge) {
+    const iquery = this.set('query');
     // 解析url，并把queryStr解析为object
     const u = urllib.parse(ajaxOptions.url, true);
     if (this._uri && !u.host) {
@@ -204,7 +202,7 @@ export default class Ajax {
     }
     if (needMerge) {
       // 合并ajaxOptions.data到query，重复的key被data中的值替换
-      u.query = Object.assign(u.query || {}, this._setting.query, ajaxOptions.data);
+      u.query = Object.assign(u.query || {}, iquery, ajaxOptions.data);
       // 去除search属性，在format函数中，如果存在search，那么query解析为queryStr不被接收
       const query = qs.stringify(u.query, ajaxOptions.qsOption);
       u.search = (query && ('?' + query)) || '';
