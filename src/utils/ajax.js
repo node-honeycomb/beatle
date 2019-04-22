@@ -10,7 +10,7 @@ import isPlainObject from '../core/isPlainObject';
 import urllib from 'url';
 
 const noop = (d) => d;
-
+const empty = {};
 /**
  * # Ajax模块
  *
@@ -76,7 +76,7 @@ export default class Ajax {
     return new Ajax().request(ajaxOptions);
   }
 
-  static query = {}
+  static query = empty
 
   constructor(options = {}) {
     if (options.origin) {
@@ -169,7 +169,7 @@ export default class Ajax {
           return value;
         }
       } else {
-        if (this._setting[name]) {
+        if (this._setting[name] && (this._setting[name] !== noop || this._setting[name] !== empty)) {
           warning(false, messages.duplicateProp, 'set', name, 'headers, delimeter, normalize, stringify, beforeRequest, beforeResponse, afterResponse', 'Beatle.Ajax');
         }
         this._setting[name] = value;
@@ -182,11 +182,20 @@ export default class Ajax {
     const delimeter = this.set('delimeter');
     const normalize = ajaxOptions.normalize || this.set('normalize');
     ajaxOptions.originUrl = ajaxOptions.url;
-    if (mutable && normalize) {
-      const data = isPlainObject(ajaxOptions.data) ? Object.assign({}, iquery, ajaxOptions.data) : ajaxOptions.data;
-      ajaxOptions.url = substitute(ajaxOptions.url, data, true, delimeter);
-    } else if (ajaxOptions.params || ajaxOptions.data) {
-      ajaxOptions.url = substitute(ajaxOptions.url, Object.assign({}, iquery, ajaxOptions.params || ajaxOptions.data), !ajaxOptions.params, delimeter);
+    let data;
+    if (normalize) {
+      data = Object.assign({}, iquery, ajaxOptions.params);
+
+      if (mutable) {
+        if (isPlainObject(ajaxOptions.data)) {
+          Object.assign(data, ajaxOptions.data);
+        }
+        ajaxOptions.url = substitute(ajaxOptions.url, data, true, delimeter);
+      } else {
+        ajaxOptions.url = substitute(ajaxOptions.url, data, true, delimeter);
+      }
+    } else {
+      ajaxOptions.url = substitute(ajaxOptions.url, ajaxOptions.params || ajaxOptions.data, false, delimeter);
     }
   }
 
