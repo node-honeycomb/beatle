@@ -166,7 +166,12 @@ export default class Ajax {
       warning(false, messages.invalidProp, 'set', name, 'headers, delimeter, normalize, stringify, beforeRequest, beforeResponse, afterResponse', 'Beatle.Ajax');
     } else {
       if (value === undefined || value === null) {
-        return this._setting[name] || Ajax[name];
+        value = this._setting[name] || Ajax[name];
+        if (value === noop) {
+          return null;
+        } else {
+          return value;
+        }
       } else {
         if (this._setting[name]) {
           warning(false, messages.duplicateProp, 'set', name, 'headers, delimeter, normalize, stringify, beforeRequest, beforeResponse, afterResponse', 'Beatle.Ajax');
