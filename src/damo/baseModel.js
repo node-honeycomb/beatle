@@ -68,7 +68,7 @@ export const exec = (name, feedback, curdOpt = {}) => (model, actionName, descri
         return ret;
       }, err => {
         feedback && feedback(err);
-        return err;
+        throw err;
       });
       return this.fromPromise(promise);
     }
@@ -242,7 +242,7 @@ export default class BaseModel {
       return data;
     }, err => {
       callback && callback(err);
-      return err;
+      throw err;
     });
 
     return this.fromPromise(promise);
