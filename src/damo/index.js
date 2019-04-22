@@ -52,12 +52,13 @@ export default function enhanceBeatle(Beatle) {
      */
 
     observer(originData, Com) {
-      if (Com) {
+      if (isReactComponent(Com)) {
         return this.connect(originData, Com, isPlainObject(originData));
       }
       if (!originData) {
         originData = '';
       }
+      const callback = Com;
       if (typeof originData === 'function' || typeof originData === 'string') {
         // #! 这里有问题，要通过store.subscribe来实现
         const store = this.seed.get('store');
@@ -71,9 +72,10 @@ export default function enhanceBeatle(Beatle) {
             const _states = this.select(str);
             if (Array.isArray(states) && states.filter((state, index) => !isEqual(state, _states[index])).length || !isEqual(_states, states)) {
               // 第一次进来后，后续要判断新的变化才进来
+              callback(_states, states);
               states = _states;
               emitter.emit(eventName, _states && _states.asMutable ? _states.asMutable({deep: true}) : _states);
-              trySubscribe();
+              !callback && trySubscribe();
             }
           });
         };
