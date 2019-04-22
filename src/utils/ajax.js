@@ -182,6 +182,7 @@ export default class Ajax {
     const delimeter = this.set('delimeter');
     const normalize = ajaxOptions.normalize || this.set('normalize');
     ajaxOptions.originUrl = ajaxOptions.url;
+    const originData = ajaxOptions.data || {};
     let data;
     if (normalize) {
       data = Object.assign({}, iquery, ajaxOptions.params);
@@ -190,18 +191,17 @@ export default class Ajax {
         if (isPlainObject(ajaxOptions.data)) {
           Object.assign(data, ajaxOptions.data);
         }
-        ajaxOptions.url = substitute(ajaxOptions.url, data, true, delimeter);
+        ajaxOptions.url = substitute(ajaxOptions.url, data, (n) => delete originData[n], delimeter);
       } else {
-        ajaxOptions.url = substitute(ajaxOptions.url, data, true, delimeter);
+        ajaxOptions.url = substitute(ajaxOptions.url, data, (n) => delete originData[n], delimeter);
       }
     } else {
-      ajaxOptions.url = substitute(ajaxOptions.url, ajaxOptions.params || ajaxOptions.data, false, delimeter);
+      ajaxOptions.url = substitute(ajaxOptions.url, ajaxOptions.params || originData, null, delimeter);
     }
   }
 
   // #! 走params形式包装ajaxOptions
   _formatQuery(ajaxOptions, needMerge) {
-    const iquery = this.set('query');
     // 解析url，并把queryStr解析为object
     const u = urllib.parse(ajaxOptions.url, true);
     if (this._uri && !u.host) {
@@ -211,7 +211,7 @@ export default class Ajax {
     }
     if (needMerge) {
       // 合并ajaxOptions.data到query，重复的key被data中的值替换
-      u.query = Object.assign(u.query || {}, iquery, ajaxOptions.data);
+      u.query = Object.assign(u.query || {}, ajaxOptions.data);
       // 去除search属性，在format函数中，如果存在search，那么query解析为queryStr不被接收
       const query = qs.stringify(u.query, ajaxOptions.qsOption);
       u.search = (query && ('?' + query)) || '';
