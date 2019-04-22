@@ -184,7 +184,7 @@ export default class Ajax {
       const data = isPlainObject(ajaxOptions.data) ? Object.assign({}, this._setting.query, ajaxOptions.data) : ajaxOptions.data;
       ajaxOptions.url = substitute(ajaxOptions.url, data, true, delimeter);
     } else if (ajaxOptions.params || ajaxOptions.data) {
-      ajaxOptions.url = substitute(ajaxOptions.url, Object.assign({}, this._setting.query, ajaxOptions.params || ajaxOptions.data), false, delimeter);
+      ajaxOptions.url = substitute(ajaxOptions.url, Object.assign({}, this._setting.query, ajaxOptions.params || ajaxOptions.data), !ajaxOptions.params, delimeter);
     }
   }
 
