@@ -546,7 +546,7 @@ export function getProcessor(model, initialState, modelName, actionName, func, g
         dispatch({
           type: encodeActionType(modelName, actionName),
           payload: {
-            data: func && func.data,
+            data: func ? func.data : null,
             arguments: args,
             store: initialState
           }

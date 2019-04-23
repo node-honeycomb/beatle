@@ -45,12 +45,23 @@ export const exec = (name, feedback, curdOpt = {}) => (model, actionName, descri
       if (feedback) {
         args.push(feedback);
       }
-      return this.setState({
-        [name]: {
-          exec: curdOpt.exec || actionName,
-          callback: callback
-        }
-      }, ...args);
+      if (curdOpt.exec || action) {
+        return this.setState({
+          [name]: {
+            exec: curdOpt.exec || actionName,
+            callback: callback
+          }
+        }, ...args);
+      } else {
+        return this.setState({
+          [name]: (...args) => {
+            const timer = setTimeout(() => {
+              clearTimeout(timer);
+              callback.apply(this, args);
+            });
+          }
+        }, ...args);
+      }
     } else {
       // #! exec(null|false)
       let action = curdOpt;
