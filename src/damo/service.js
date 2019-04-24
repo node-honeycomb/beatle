@@ -67,10 +67,15 @@ export default function service(providers, Component, {injector, globalInjector,
         if (selector.hookActions) {
           // hack react-redux 6.x
           // see: https://github.com/reduxjs/react-redux/blob/fa5857281a37545c7c036fb2499159b865b1c57d/src/components/connectAdvanced.js
-          this._hadHook = false;
+          /* eslint-disable react/prop-types */
+          this._state = this.props.location && this.props.location.state || {};
           const selectChildElement = this.selectChildElement;
-          const newProps = {};
           this.selectChildElement = (derivedProps, forwardedRef) => {
+            const state = derivedProps.location && derivedProps.location.state || {};
+            if (this._state !== state) {
+              this._hookProps = null;
+              this._state = state;
+            }
             if (!this._hookProps) {
               this._hookProps = {};
               selector.hookActions.forEach(action => {
