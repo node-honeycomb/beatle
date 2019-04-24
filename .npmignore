@@ -18,3 +18,4 @@ jsconfig.json
 !.gitignore
 auto_models.js
 auto_routes.js
+.git/

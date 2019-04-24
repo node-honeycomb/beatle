@@ -1,7 +1,7 @@
 import React, {createContext} from 'react';
 import warning from 'fbjs/lib/warning';
 import logMessages from '../core/messages';
-
+import isEqual from 'lodash/isEqual';
 export default function service(providers, Component, {injector, globalInjector, selector}) {
   // + 获取HOC包装的组件的实例 > see:
   // https://github.com/RubaXa/Sortable/issues/713#issuecomment-169668921
@@ -68,11 +68,12 @@ export default function service(providers, Component, {injector, globalInjector,
           // hack react-redux 6.x
           // see: https://github.com/reduxjs/react-redux/blob/fa5857281a37545c7c036fb2499159b865b1c57d/src/components/connectAdvanced.js
           /* eslint-disable react/prop-types */
-          this._state = this.props.location && this.props.location.state || {};
+          const empty = {};
+          this._state = this.props.location && this.props.location.state || empty;
           const selectChildElement = this.selectChildElement;
           this.selectChildElement = (derivedProps, forwardedRef) => {
-            const state = derivedProps.location && derivedProps.location.state || {};
-            if (this._state !== state) {
+            const state = derivedProps.location && derivedProps.location.state || empty;
+            if (this._state !== state && !isEqual(this._state, state)) {
               this._hookProps = null;
               this._state = state;
             }
