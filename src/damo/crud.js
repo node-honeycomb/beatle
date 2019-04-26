@@ -164,7 +164,7 @@ const crud = {
     return query || currentState;
   },
   get: (nextState, payload, initialState, currentState, action) => {
-    return getState(payload, action.processData, true);
+    return getState(payload, action.processData, true) || initialState;
   },
   query: (nextState, payload, initialState, currentState, action) => {
     const data = action.processData ? action.processData(payload.data) : payload.data;
@@ -177,7 +177,7 @@ const crud = {
         loading: false
       };
     } else {
-      return data;
+      return data || initialState;
     }
   }
 };
