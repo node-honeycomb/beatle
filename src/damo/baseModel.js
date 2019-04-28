@@ -9,6 +9,22 @@ import isPlainObject from '../core/isPlainObject';
 import crud from './crud';
 import {getProcessor, getProcessorByExec, getProcessorByGenerator, setReducers} from '../seed/action';
 
+function getReducer(reducer, curdOpt) {
+  let callback;
+  if (isPlainObject(reducer)) {
+    callback = {};
+    for (let key in reducer) {
+      callback[key] = (nextStore, payload, initialState, currentState, opt) => {
+        return reducer[key].call(this, nextStore, payload, initialState, currentState, curdOpt || opt);
+      };
+    }
+  } else {
+    callback = (nextStore, payload, initialState, currentState, opt) => {
+      return reducer.call(this, nextStore, payload, initialState, currentState, curdOpt || opt);
+    };
+  }
+  return callback;
+}
 // see: https://github.com/jayphelps/core-decorators
 /**
  * curdOpt = {
@@ -22,20 +38,6 @@ export const exec = (name, feedback, curdOpt = {}) => (model, actionName, descri
   const reducer = descriptor.initializer ? descriptor.initializer() : descriptor.value;
   descriptor.initializer = undefined;
   descriptor.value = function (...args) {
-    let callback;
-    if (isPlainObject(reducer)) {
-      callback = {};
-      for (let key in reducer) {
-        callback[key] = (nextStore, payload, initialState, currentState, opt) => {
-          return reducer[key].call(this, nextStore, payload, initialState, currentState, curdOpt || opt);
-        };
-      }
-    } else {
-      callback = (nextStore, payload, initialState, currentState, opt) => {
-        return reducer.call(this, nextStore, payload, initialState, currentState, curdOpt || opt);
-      };
-    }
-
     const action = this._actions[actionName];
     if (!feedback && action && (action.exec.successMessage || action.exec.errorMessage)) {
       feedback = crud.message(action.exec.successMessage, action.exec.errorMessage);
@@ -49,26 +51,21 @@ export const exec = (name, feedback, curdOpt = {}) => (model, actionName, descri
         return this.setState({
           [name]: {
             exec: curdOpt.exec || actionName,
-            callback: callback
+            callback: getReducer(reducer, curdOpt)
           }
         }, ...args);
       } else {
         return this.setState({
-          [name]: (...args) => {
-            const timer = setTimeout(() => {
-              clearTimeout(timer);
-              callback.apply(this, args);
-            });
-          }
+          [name]: new Promise(resolve => resolve(isPlainObject(reducer) ? reducer : getReducer(reducer, curdOpt).apply(this, args)))
         }, ...args);
       }
-    } else {
+    } else if (name !== undefined) {
       // #! exec(null|false)
       let action = curdOpt;
       if (action.exec) {
-        action.callback = callback;
+        action.callback = getReducer(reducer, curdOpt);
       } else {
-        action = callback;
+        action = getReducer(reducer, curdOpt);
       }
       // #! name === false 则只走model.actionName调用不更新数据，否则是根据返回结构更新数据
       const promise = this.execute(actionName, action, name === false, ...args);
