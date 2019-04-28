@@ -14,12 +14,12 @@ function getReducer(reducer, curdOpt) {
   if (isPlainObject(reducer)) {
     callback = {};
     for (let key in reducer) {
-      callback[key] = (nextStore, payload, initialState, currentState, opt) => {
+      callback[key] = function (nextStore, payload, initialState, currentState, opt) {
         return reducer[key].call(this, nextStore, payload, initialState, currentState, curdOpt || opt);
       };
     }
   } else {
-    callback = (nextStore, payload, initialState, currentState, opt) => {
+    callback = function (nextStore, payload, initialState, currentState, opt) {
       return reducer.call(this, nextStore, payload, initialState, currentState, curdOpt || opt);
     };
   }
