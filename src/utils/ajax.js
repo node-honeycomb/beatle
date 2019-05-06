@@ -405,7 +405,10 @@ export default class Ajax {
     });
     catchError = catchError || this.set('catchError');
     if (catchError) {
-      xhr = xhr.catch(catchError);
+      xhr = xhr.catch(err => {
+        catchError(err);
+        throw err;
+      });
     }
     return xhr;
   }
