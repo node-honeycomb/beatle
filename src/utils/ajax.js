@@ -34,7 +34,7 @@ export default class Ajax {
   static normalize = false;
 
   static stringify = false;
-
+  static catchError = null;
   static beforeRequest = noop;
   static afterResponse = noop;
   static beforeResponse = (response, ajaxOptions) => {
@@ -346,9 +346,11 @@ export default class Ajax {
     let beforeRequest = ajaxOptions.beforeRequest;
     let beforeResponse = ajaxOptions.beforeResponse;
     let afterResponse = ajaxOptions.afterResponse;
+    let catchError = ajaxOptions.catchError;
     delete ajaxOptions.beforeRequest;
     delete ajaxOptions.beforeResponse;
     delete ajaxOptions.afterResponse;
+    delete ajaxOptions.catchError;
 
     beforeRequest = beforeRequest || this.set('beforeRequest');
     const processorResult = beforeRequest(ajaxOptions);
@@ -401,6 +403,10 @@ export default class Ajax {
     }, (err) => {
       return callback && callback(err, null, xhr);
     });
+    catchError = catchError || this.set('catchError');
+    if (catchError) {
+      xhr = xhr.catch(catchError);
+    }
     return xhr;
   }
 
