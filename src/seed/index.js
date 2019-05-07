@@ -55,7 +55,11 @@ export default class ReduxSeed {
             const promise = this.execute(actionName, {exec: exec}, true, ...args);
             const feedback = exec.successMessage || exec.errorMessage ? crud.message(exec.successMessage, exec.errorMessage) : () => {};
             promise.then(ret => {
-              feedback(null, ret);
+              if (ret instanceof Error) {
+                feedback(ret);
+              } else {
+                feedback(null, ret);
+              }
             }, err => {
               feedback(err);
             });

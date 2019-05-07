@@ -391,10 +391,14 @@ export function getProcessorByExec(model, initialState, modelName, actionName, e
           reject(error);
         };
         const successCallback = function (data) {
-          if (!noDispatch) {
-            dispatch({type: statusMap.success, payload: {data: data, store: initialState, arguments: args, exec: exec}});
+          if (data instanceof Error) {
+            errorCallback(data);
+          } else {
+            if (!noDispatch) {
+              dispatch({type: statusMap.success, payload: {data: data, store: initialState, arguments: args, exec: exec}});
+            }
+            resolve(data);
           }
-          resolve(data);
         };
 
         let result;
@@ -524,10 +528,14 @@ export function getProcessor(model, initialState, modelName, actionName, func, g
           return Promise.resolve(undefined);
         } else {
           if (result && result.then) {
-            result.then((ret) => showDispatch({
-              type: model.ACTION_TYPE_IMMEDIATE,
-              payload: ret
-            }));
+            result.then((ret) => {
+              if (!(ret instanceof Error)) {
+                showDispatch({
+                  type: model.ACTION_TYPE_IMMEDIATE,
+                  payload: ret
+                });
+              }
+            });
             return result;
           } else {
             if (result) {

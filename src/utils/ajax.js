@@ -407,7 +407,8 @@ export default class Ajax {
     if (catchError) {
       xhr = xhr.catch(err => {
         catchError(err);
-        throw err;
+        window.console.error(err);
+        return err;
       });
     }
     return xhr;

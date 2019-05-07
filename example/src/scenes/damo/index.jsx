@@ -140,7 +140,7 @@ class UserSelector extends BaseSelector {
   initialize(ownProps) {
     const userModel = this.getModel('user');
     userModel.getUser('baqian').then(res => {
-      window.window.console.log(res);
+      window.console.log(res);
     });
     userModel.query();
   }

@@ -71,12 +71,14 @@ export const exec = (name, feedback, curdOpt = {}) => (model, actionName, descri
       const promise = this.execute(actionName, action, name === false, ...args);
       promise.then(ret => {
         if (feedback) {
-          feedback(null, ret);
+          if (ret instanceof Error) {
+            feedback(ret);
+          } else {
+            feedback(null, ret);
+          }
         }
-        return ret;
       }, err => {
         feedback && feedback(err);
-        throw err;
       });
       return this.fromPromise(promise);
     }
@@ -114,11 +116,13 @@ export const action = (target, name, descriptor) => {
   descriptor.value = function (...args) {
     const ret = method.apply(this, args);
     if (ret && ret.then) {
-      ret.then(() => {
-        this.dispatch({
-          type: this.ACTION_TYPE_IMMEDIATE,
-          payload: this.state
-        });
+      ret.then((ret) => {
+        if (!(ret instanceof Error)) {
+          this.dispatch({
+            type: this.ACTION_TYPE_IMMEDIATE,
+            payload: this.state
+          });
+        }
       });
     } else {
       this.dispatch({
@@ -237,20 +241,28 @@ export default class BaseModel {
       let i = 0;
       if (keys.length > 1) {
         data = {};
-        keys.forEach(key => {
-          data[key] = datas[i++];
-        });
+        for (let len = keys.length; i < len; i++) {
+          if (datas[i] instanceof Error) {
+            data = datas[i];
+            break;
+          } else {
+            data[keys[i]] = datas[i];
+          }
+        }
       } else {
         data = datas[i];
       }
 
       if (callback) {
-        callback(null, data);
+        if (data instanceof Error) {
+          callback(data);
+        } else {
+          callback(null, data);
+        }
       }
       return data;
     }, err => {
       callback && callback(err);
-      throw err;
     });
 
     return this.fromPromise(promise);
@@ -260,7 +272,11 @@ export default class BaseModel {
     promise.subscribe = (callback) => {
       if (callback) {
         promise.then(res => {
-          callback(null, res);
+          if (res instanceof Error) {
+            callback(res);
+          } else {
+            callback(null, res);
+          }
         }, callback);
       }
       return promise;
