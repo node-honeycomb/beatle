@@ -34,7 +34,7 @@ function getReducer(reducer, curdOpt) {
  *  processData
  * }
  */
-export const exec = (name, feedback, curdOpt = {}) => (model, actionName, descriptor) => {
+export const exec = (name, feedback, curdOpt) => (model, actionName, descriptor) => {
   const reducer = descriptor.initializer ? descriptor.initializer() : descriptor.value;
   descriptor.initializer = undefined;
   descriptor.value = function (...args) {
@@ -47,10 +47,10 @@ export const exec = (name, feedback, curdOpt = {}) => (model, actionName, descri
       if (feedback) {
         args.push(feedback);
       }
-      if (curdOpt.exec || action) {
+      if (curdOpt && curdOpt.exec || action) {
         return this.setState({
           [name]: {
-            exec: curdOpt.exec || actionName,
+            exec: curdOpt && curdOpt.exec || actionName,
             callback: getReducer(reducer, curdOpt)
           }
         }, ...args);
@@ -61,7 +61,7 @@ export const exec = (name, feedback, curdOpt = {}) => (model, actionName, descri
       }
     } else if (name !== undefined) {
       // #! exec(null|false)
-      let action = curdOpt;
+      let action = curdOpt || {};
       if (action.exec) {
         action.callback = getReducer(reducer, curdOpt);
       } else {
