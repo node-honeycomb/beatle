@@ -66,7 +66,7 @@ function append(currentState, state, action, byMerge) {
   }
   return query || currentState;
 }
-function getState(payload, processData, pure) {
+function getState(payload, processData, action, pure) {
   const data = processData ? processData(payload.data) : payload.data;
   if (pure) {
     return data;
@@ -76,6 +76,9 @@ function getState(payload, processData, pure) {
       state = data;
     } else if (data) {
       state = payload.arguments[0];
+      if (typeof data === 'number' && action.cid && state && !state[action.cid]) {
+        state[action.cid] = data;
+      }
     }
     return state;
   }
@@ -114,7 +117,7 @@ const crud = {
     return nextState;
   },
   create: (nextState, payload, initialState, currentState, action) => {
-    const state = getState(payload, action.processData);
+    const state = getState(payload, action.processData, action);
     if (state) {
       if (parseInt(payload.data, 10)) {
         state[action.cid || 'id'] = payload.data;
@@ -125,7 +128,7 @@ const crud = {
     }
   },
   update: (nextState, payload, initialState, currentState, action) => {
-    const state = getState(payload, action.processData);
+    const state = getState(payload, action.processData, action);
 
     if (state) {
       return append(currentState, state, action, true);
@@ -134,7 +137,7 @@ const crud = {
     }
   },
   delete: (nextState, payload, initialState, currentState, action) => {
-    const state = getState(payload, action.processData);
+    const state = getState(payload, action.processData, action);
     const query = getQuery(currentState);
     if (query) {
       currentState = currentState.data;
@@ -164,7 +167,7 @@ const crud = {
     return query || currentState;
   },
   get: (nextState, payload, initialState, currentState, action) => {
-    return getState(payload, action.processData, true) || initialState;
+    return getState(payload, action.processData, action, true) || initialState;
   },
   query: (nextState, payload, initialState, currentState, action) => {
     const data = action.processData ? action.processData(payload.data) : payload.data;
