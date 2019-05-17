@@ -182,7 +182,7 @@ export default class Ajax {
     const delimeter = this.set('delimeter');
     const normalize = ajaxOptions.normalize || this.set('normalize');
     ajaxOptions.originUrl = ajaxOptions.url;
-    const originData = ajaxOptions.data || {};
+    const originData = Object.assign({}, ajaxOptions.data);
     let data;
     if (normalize) {
       data = Object.assign({}, iquery, ajaxOptions.params);
