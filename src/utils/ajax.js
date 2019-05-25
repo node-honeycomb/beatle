@@ -65,7 +65,7 @@ export default class Ajax {
       }
     } else {
       const error = new Error(response.statusText);
-      error.response = response;
+      error.response = response.json ? response.json() : response;
       response = error;
     }
 
