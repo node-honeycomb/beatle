@@ -208,7 +208,11 @@ export default class ReduxSeed {
    */
 
   serialize(obj) {
-    return obj && immutable(obj);
+    if (obj !== undefined && !obj.asMutable) {
+      return immutable(obj);
+    } else {
+      return obj;
+    }
   }
 
   deserialize(obj, deep) {

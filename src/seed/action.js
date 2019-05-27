@@ -21,11 +21,14 @@ import reducerImmediate from './reducerImmediate';
  * bindings = [{name: {test: 1}}], flattern = false|true
  * => {name: {test: 1}}
  */
-function getStateByModel(models, binding, flattern, wrappers, attrKey) {
+function getStateByModel(redux, binding, flattern, wrappers, attrKey) {
   const keys = binding.split('.');
   const modelName = keys.shift();
   attrKey = attrKey || modelName;
-  const model = models[modelName] || {};
+  const model = {
+    state: redux.state[modelName] || {},
+    actions: redux.actions[modelName] || {}
+  };
   let iState;
   let wrapper;
   let name;
@@ -55,7 +58,7 @@ function getStateByModel(models, binding, flattern, wrappers, attrKey) {
   }
 }
 
-export function getStateByModels(models, bindings, flattern, wrappers, cacheMap) {
+export function getStateByModels(redux, bindings, flattern, wrappers, cacheMap) {
   let stateProps = {};
   let keys;
   let mState;
@@ -63,7 +66,7 @@ export function getStateByModels(models, bindings, flattern, wrappers, cacheMap)
     bindings.forEach((binding) => {
       if (typeof binding === 'string') {
         if (!cacheMap[binding]) {
-          mState = getStateByModel(models, binding, flattern, wrappers);
+          mState = getStateByModel(redux, binding, flattern, wrappers);
           if (mState && !mState[binding]) {
             cacheMap[binding] = true;
           }
@@ -75,7 +78,7 @@ export function getStateByModels(models, bindings, flattern, wrappers, cacheMap)
             if (Object(binding[modelName]) === binding[modelName]) {
               mState[modelName] = binding[modelName];
             } else if (typeof binding[modelName] === 'string') {
-              Object.assign(mState, getStateByModel(models, binding[modelName], false, wrappers, modelName));
+              Object.assign(mState, getStateByModel(redux, binding[modelName], false, wrappers, modelName));
             }
             if (mState[modelName] === undefined) {
               delete mState[modelName];

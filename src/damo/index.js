@@ -93,14 +93,15 @@ export default function enhanceBeatle(Beatle) {
     }
 
     select(keyStr, noFlattern, wrappers) {
-      const {models, store} = ReduxSeed.getRedux(this._setting.seedName);
+      const {store, actions} = ReduxSeed.getRedux(this._setting.seedName);
       const allState = store.getState();
+      const redux = {state: allState, actions: actions};
       const dispatch = this.dispatch.bind(this);
       let state;
       if (typeof keyStr === 'function') {
         state = keyStr(allState);
       } else if (keyStr) {
-        state = getStateByModels(models, [].concat(keyStr), !noFlattern, wrappers || {
+        state = getStateByModels(redux, [].concat(keyStr), !noFlattern, wrappers || {
           state: (d) => this.seed._isImmutable ? this.seed.serialize(d) : d,
           actions: (actions) => getActionsByDispatch(actions, dispatch)
         }, {});

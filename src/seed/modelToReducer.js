@@ -30,8 +30,9 @@ export default function modelToReducer(model, initialState, isImmutable) {
       } else {
         model.state = nextStore.asMutable ? nextStore.asMutable({deep: true}) : nextStore;
       }
+      return isImmutable ? immutable(nextStore) : nextStore;
+    } else {
+      return nextStore;
     }
-
-    return isImmutable ? immutable(nextStore) : nextStore;
   };
 }

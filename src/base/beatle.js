@@ -820,21 +820,21 @@ export default class Beatle {
 
   toBindings(bindings, flattern, context) {
     // #! 从redux模块中获取model实例和所有的action
-    const {models, actions} = ReduxSeed.getRedux(this._setting.seedName);
+    const {store, actions} = ReduxSeed.getRedux(this._setting.seedName);
     return {
       flattern: flattern,
       dataBindings: typeof bindings[0] === 'function' ? bindings[0].bind(context) : () => {
         bindings._sign = {};
-        return getStateByModels(models, bindings, flattern, {
+        return getStateByModels({state: store.getState(), actions: actions}, bindings, flattern, {
           state: (d) => this.seed._isImmutable ? this.seed.serialize(d) : d
         }, bindings._sign);
       },
       eventBindings: typeof bindings[1] === 'function' ? (dispatch, props) => bindings[1].call(context, dispatch, props, actions) : (dispatch) => {
-        const actions = getStateByModels(models, bindings, flattern, {
+        const iactions = getStateByModels({state: store.getState(), actions: actions}, bindings, flattern, {
           actions: (actions) => getActionsByDispatch(actions, dispatch)
         }, bindings._sign);
         delete bindings._sign;
-        return actions;
+        return iactions;
       }
     };
   }
