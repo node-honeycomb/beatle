@@ -32,8 +32,9 @@ function getStateByModel(redux, binding, flattern, wrappers, attrKey) {
   let iState;
   let wrapper;
   let name;
+  const cate = keys[0];
   if (keys.length) {
-    wrapper = wrappers[keys[0]];
+    wrapper = wrappers[cate];
     if (wrapper) {
       iState = wrapper(model[keys.shift()]);
       name = keys.shift();
@@ -41,6 +42,12 @@ function getStateByModel(redux, binding, flattern, wrappers, attrKey) {
         iState = iState[name];
         name = keys.shift();
       }
+    } else if (!model[cate] && redux[cate]) {
+      // support global function
+      flattern = true;
+      iState = {
+        [cate]: redux[cate].bind(null, modelName)
+      };
     }
   } else {
     iState = {};

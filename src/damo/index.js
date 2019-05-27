@@ -92,10 +92,32 @@ export default function enhanceBeatle(Beatle) {
       }
     }
 
+    put(name, state = {}) {
+      const {models} = ReduxSeed.getRedux(this._setting.seedName);
+      const model = models[name];
+      if (model) {
+        return this.dispatch({
+          type: model.ACTION_TYPE_IMMEDIATE,
+          payload: state
+        });
+      } else {
+        return Promise.reject(false);
+      }
+    }
+
     select(keyStr, noFlattern, wrappers) {
       const {store, actions} = ReduxSeed.getRedux(this._setting.seedName);
       const allState = store.getState();
-      const redux = {state: allState, actions: actions};
+      const redux = {
+        state: allState,
+        actions: actions,
+        put: (name, state) => {
+          return this.put(name, state);
+        },
+        select: (name, noFlattern) => {
+          return this.select(name, noFlattern);
+        }
+      };
       const dispatch = this.dispatch.bind(this);
       let state;
       if (typeof keyStr === 'function') {
