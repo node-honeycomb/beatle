@@ -166,7 +166,7 @@ const crud = {
       if (Array.isArray(currentState)) {
         let count = 0;
         currentState = currentState.filter(d => {
-          if (id == d[action.cid]) {
+          if (id === String(d[action.cid])) {
             count++;
             return false;
           } else {

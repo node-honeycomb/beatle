@@ -108,6 +108,7 @@ export default class Beatle {
     this._setting = {
       basePath: options.base || '',
       query: options.env,
+      level: options.level,
       appName: name,
       seedName: name + new Date().getTime(),
       rootDom: options.root || document.body,
@@ -228,6 +229,10 @@ export default class Beatle {
 
   get basename() {
     return this._setting.basePath;
+  }
+
+  get setting() {
+    return this._setting;
   }
 
   /**
