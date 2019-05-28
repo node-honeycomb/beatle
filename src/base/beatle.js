@@ -77,7 +77,11 @@ export default class Beatle {
 
   _getRouterProps(routes, _basePath) {
     const {basePath, routeType, routePrompt} = this._setting;
-    _basePath = _basePath || basePath;
+    if (_basePath) {
+      this._setting.basePath = _basePath;
+    } else {
+      _basePath = basePath;
+    }
 
     return {
       initialEntries: routeType === 'localHistory' ?  Object.keys(this.routesMap) : initialEntries,
