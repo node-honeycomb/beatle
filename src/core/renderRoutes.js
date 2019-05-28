@@ -34,37 +34,39 @@ export default function renderRoutes(basePath, routes, extraProps, switchProps) 
     switchProps = {};
   }
   return routes ? (<Switch key="switch" {...switchProps}>{routes.map(function (route, i) {
-    const exact = route.exact || !route.routes || !route.routes.length;
-    const relativePath = path.normalize('/' + (route.resolvePath || route.path || route.name));
-    if (relativePath === route.resolvePath) {
-      if (!route.navKey && route.resolvePath.indexOf(basePath) === -1) {
+    if (!route.element) {
+      const exact = route.exact || !route.routes || !route.routes.length;
+      const relativePath = path.normalize('/' + (route.resolvePath || route.path || route.name));
+      if (relativePath === route.resolvePath) {
+        if (!route.navKey && route.resolvePath.indexOf(basePath) === -1) {
+          route.resolvePath = path.normalize(basePath + relativePath);
+        }
+      } else {
         route.resolvePath = path.normalize(basePath + relativePath);
       }
-    } else {
-      route.resolvePath = path.normalize(basePath + relativePath);
-    }
-    const routeProps = {
-      path: relativePath,
-      exact: exact,
-      strict: route.strict,
-      route: route
-    };
-    routeProps.render = function render(props) {
-      props.route = route;
-      /* eslint-disable react/prop-types */
-      if (route.indexRoute && props.match.isExact && props.match.path !== route.indexRoute.path) {
-        if (route.indexRoute.path) {
-          return (<Fragment>
-            <Redirect key="redirect" to={path.normalize(basePath, route.indexRoute.path)} />
-            {renderComponent(basePath, route, props)}
-          </Fragment>);
-        } else {
-          return renderComponent(basePath, route.indexRoute, {key: 'redirect'});
+      const routeProps = {
+        path: relativePath,
+        exact: exact,
+        strict: route.strict,
+        route: route
+      };
+      routeProps.render = function render(props) {
+        props.route = route;
+        /* eslint-disable react/prop-types */
+        if (route.indexRoute && props.match.isExact && props.match.path !== route.indexRoute.path) {
+          if (route.indexRoute.path) {
+            return (<Fragment>
+              <Redirect key="redirect" to={path.normalize('/' + route.indexRoute.path)} />
+              {renderComponent(basePath, route, props)}
+            </Fragment>);
+          } else {
+            return renderComponent(basePath, route.indexRoute, {key: 'redirect'});
+          }
         }
-      }
-
-      return renderComponent(basePath, route, props);
-    };
-    return (<Route key={route.key || i} {...routeProps} />);
+        return renderComponent(basePath, route, props);
+      };
+      route.element = (<Route key={route.key || i} {...routeProps} />);
+    }
+    return route.element;
   })}</Switch>) : null;
 }
