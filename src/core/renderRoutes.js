@@ -2,9 +2,9 @@ import React, {Fragment, Suspense} from 'react';
 import {Switch, Route, Redirect} from 'react-router-dom';
 import path from 'path';
 
-function renderComponent(bastPath, route, props) {
+function renderComponent(basePath, route, props) {
   Object.assign(props, {
-    children: renderRoutes(bastPath, route.routes, route.extraProps, route.switchProps)
+    children: renderRoutes(basePath, route.routes, route.extraProps, route.switchProps)
   });
 
   if (route.component) {
@@ -26,7 +26,7 @@ function renderComponent(bastPath, route, props) {
     return route.loading;
   }
 }
-export default function renderRoutes(bastPath, routes, extraProps, switchProps) {
+export default function renderRoutes(basePath, routes, extraProps, switchProps) {
   if (extraProps === void 0) {
     extraProps = {};
   }
@@ -36,8 +36,12 @@ export default function renderRoutes(bastPath, routes, extraProps, switchProps) 
   return routes ? (<Switch key="switch" {...switchProps}>{routes.map(function (route, i) {
     const exact = route.exact || !route.routes || !route.routes.length;
     const relativePath = path.normalize('/' + (route.resolvePath || route.path || route.name));
-    if (relativePath !== route.resolvePath) {
-      route.resolvePath = path.normalize(bastPath + relativePath);
+    if (relativePath === route.resolvePath) {
+      if (!route.navKey && route.resolvePath.indexOf(basePath) === -1) {
+        route.resolvePath = path.normalize(basePath + relativePath);
+      }
+    } else {
+      route.resolvePath = path.normalize(basePath + relativePath);
     }
     const routeProps = {
       path: relativePath,
@@ -51,15 +55,15 @@ export default function renderRoutes(bastPath, routes, extraProps, switchProps) 
       if (route.indexRoute && props.match.isExact && props.match.path !== route.indexRoute.path) {
         if (route.indexRoute.path) {
           return (<Fragment>
-            <Redirect key="redirect" to={route.indexRoute.path} />
-            {renderComponent(bastPath, route, props)}
+            <Redirect key="redirect" to={path.normalize(basePath, route.indexRoute.path)} />
+            {renderComponent(basePath, route, props)}
           </Fragment>);
         } else {
-          return renderComponent(bastPath, route.indexRoute, {key: 'redirect'});
+          return renderComponent(basePath, route.indexRoute, {key: 'redirect'});
         }
       }
 
-      return renderComponent(bastPath, route, props);
+      return renderComponent(basePath, route, props);
     };
     return (<Route key={route.key || i} {...routeProps} />);
   })}</Switch>) : null;
