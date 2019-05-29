@@ -182,7 +182,7 @@ export default class Ajax {
     const delimeter = this.set('delimeter');
     const normalize = ajaxOptions.normalize || this.set('normalize');
     ajaxOptions.originUrl = ajaxOptions.url;
-    const originData = Object.assign({}, ajaxOptions.data);
+    ajaxOptions.originData = Object.assign({}, ajaxOptions.data);
     let data;
     if (normalize) {
       data = Object.assign({}, iquery, ajaxOptions.params);
@@ -191,17 +191,18 @@ export default class Ajax {
         if (isPlainObject(ajaxOptions.data)) {
           Object.assign(data, ajaxOptions.data);
         }
-        ajaxOptions.url = substitute(ajaxOptions.url, data, (n) => delete originData[n], delimeter);
+        ajaxOptions.url = substitute(ajaxOptions.url, data, (n) => delete ajaxOptions.originData[n], delimeter);
       } else {
-        ajaxOptions.url = substitute(ajaxOptions.url, data, (n) => delete originData[n], delimeter);
+        ajaxOptions.url = substitute(ajaxOptions.url, data, (n) => delete ajaxOptions.originData[n], delimeter);
       }
     } else {
-      ajaxOptions.url = substitute(ajaxOptions.url, ajaxOptions.params || originData, null, delimeter);
+      ajaxOptions.url = substitute(ajaxOptions.url, ajaxOptions.params || ajaxOptions.originData, null, delimeter);
     }
   }
 
   // #! 走params形式包装ajaxOptions
   _formatQuery(ajaxOptions, needMerge) {
+    const data = ajaxOptions.originData || ajaxOptions.data;
     // 解析url，并把queryStr解析为object
     const u = urllib.parse(ajaxOptions.url, true);
     if (this._uri && !u.host) {
@@ -211,7 +212,7 @@ export default class Ajax {
     }
     if (needMerge) {
       // 合并ajaxOptions.data到query，重复的key被data中的值替换
-      u.query = Object.assign(u.query || {}, ajaxOptions.data);
+      u.query = Object.assign(u.query || {}, data);
       // 去除search属性，在format函数中，如果存在search，那么query解析为queryStr不被接收
       const query = qs.stringify(u.query, ajaxOptions.qsOption);
       u.search = (query && ('?' + query)) || '';
@@ -245,6 +246,7 @@ export default class Ajax {
 
     // headers是否存在json处理
     const isJsonHeader = iHeaders['Content-Type'] && iHeaders['Content-Type'].indexOf('application/json') > -1;
+    const data = ajaxOptions.originData || ajaxOptions.data;
     // 如果没有指定headers，则把默认的header合并进来
     if (!ajaxOptions.headers) {
       Object.assign(iHeaders, this.set('headers'));
@@ -257,12 +259,12 @@ export default class Ajax {
     // 如果存在json处理，或者method不为GET、DELETE
     if (isJsonHeader || !(ajaxOptions.method === 'GET' || ajaxOptions.method === 'DELETE')) {
       if (mutable) {
-        extraOption.body = stringify ? qs.stringify(ajaxOptions.data, ajaxOptions.qsOption) : JSON.stringify(ajaxOptions.data);
+        extraOption.body = stringify ? qs.stringify(data, ajaxOptions.qsOption) : JSON.stringify(data);
         if (!ajaxOptions.headers) {
           iHeaders['Content-Type'] =  stringify ? 'application/x-www-form-urlencoded' : 'application/json; charset=utf-8';
         }
       } else {
-        extraOption.body = ajaxOptions.data;
+        extraOption.body = data;
       }
       extraOption.url = this._formatQuery(ajaxOptions);
     } else {
@@ -273,6 +275,7 @@ export default class Ajax {
     delete ajaxOptions.stringify;
     delete ajaxOptions.normalize;
     delete ajaxOptions.mutable;
+    delete ajaxOptions.originData;
     /**
      * ### 常用配置
      *
