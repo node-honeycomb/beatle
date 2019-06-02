@@ -191,7 +191,7 @@ export default class Ajax {
         Object.assign(ajaxOptions.originData, ajaxOptions.data);
       } else {
         if (ajaxOptions.data) {
-          if (ajaxOptions.data) {
+          if (ajaxOptions.data.forEach) {
             ajaxOptions.data.forEach((value, key) => {
               ajaxOptions.originData[key] = value;
             });
