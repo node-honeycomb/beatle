@@ -183,36 +183,38 @@ export default class Ajax {
     const delimeter = this.set('delimeter');
     const normalize = ajaxOptions.normalize === undefined ? this.set('normalize') : ajaxOptions.normalize;
     ajaxOptions.originUrl = ajaxOptions.url;
-    if (isPlainObject(ajaxOptions.data)) {
-      ajaxOptions.originData = Object.assign({}, ajaxOptions.data);
-    } else {
-      ajaxOptions.originData = {};
-      if (ajaxOptions.data) {
-        forEach(ajaxOptions.data, (value, key) => {
-          ajaxOptions.originData[key] = value;
-        });
-      }
-    }
     let data;
     if (normalize) {
-      data = Object.assign({}, iquery, ajaxOptions.params);
-
+      // #! query merge to originData
+      ajaxOptions.originData = Object.assign({}, iquery);
       if (mutable) {
-        if (isPlainObject(ajaxOptions.data)) {
-          Object.assign(data, ajaxOptions.data);
-        }
-        ajaxOptions.url = substitute(ajaxOptions.url, data, (n) => delete ajaxOptions.originData[n], delimeter);
+        Object.assign(ajaxOptions.originData, ajaxOptions.data);
       } else {
-        ajaxOptions.url = substitute(ajaxOptions.url, data, (n) => delete ajaxOptions.originData[n], delimeter);
+        if (ajaxOptions.data) {
+          if (ajaxOptions.data) {
+            ajaxOptions.data.forEach((value, key) => {
+              ajaxOptions.originData[key] = value;
+            });
+          } else {
+            forEach(ajaxOptions.data, (value, key) => {
+              ajaxOptions.originData[key] = value;
+            });
+          }
+        }
       }
+      data = Object.assign(ajaxOptions.originData, ajaxOptions.params);
+      ajaxOptions.url = substitute(ajaxOptions.url, ajaxOptions.originData, (n) => delete ajaxOptions.originData[n], delimeter);
     } else {
-      ajaxOptions.url = substitute(ajaxOptions.url, ajaxOptions.params || ajaxOptions.originData, null, delimeter);
+      // #! originData equals to data;
+      ajaxOptions.originData = ajaxOptions.data;
+      data = Object.assign({}, iquery, ajaxOptions.params);
+      ajaxOptions.url = substitute(ajaxOptions.url, Object.keys(data).length ? data : ajaxOptions.originData, null, delimeter);
     }
   }
 
   // #! 走params形式包装ajaxOptions
   _formatQuery(ajaxOptions, needMerge) {
-    const data = ajaxOptions.originData || ajaxOptions.data;
+    const data = ajaxOptions.originData;
     // 解析url，并把queryStr解析为object
     const u = urllib.parse(ajaxOptions.url, true);
     if (this._uri && !u.host) {
@@ -256,7 +258,7 @@ export default class Ajax {
 
     // headers是否存在json处理
     const isJsonHeader = iHeaders['Content-Type'] && iHeaders['Content-Type'].indexOf('application/json') > -1;
-    const data = isPlainObject(ajaxOptions.data) ? ajaxOptions.originData : ajaxOptions.data;
+    const data = mutable ? ajaxOptions.originData : ajaxOptions.data;
     // 如果没有指定headers，则把默认的header合并进来
     if (!ajaxOptions.headers) {
       Object.assign(iHeaders, this.set('headers'));
