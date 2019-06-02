@@ -1,6 +1,7 @@
 import fetch from 'isomorphic-fetch';
 import propTypes from 'prop-types';
 import warning from 'fbjs/lib/warning';
+import forEach from 'lodash/forEach';
 import qs from 'qs';
 import ajaxShape from './ajaxShape';
 import Poller from './poller';
@@ -182,7 +183,16 @@ export default class Ajax {
     const delimeter = this.set('delimeter');
     const normalize = ajaxOptions.normalize === undefined ? this.set('normalize') : ajaxOptions.normalize;
     ajaxOptions.originUrl = ajaxOptions.url;
-    ajaxOptions.originData = Object.assign({}, ajaxOptions.data);
+    if (isPlainObject(ajaxOptions.data)) {
+      ajaxOptions.originData = Object.assign({}, ajaxOptions.data);
+    } else {
+      ajaxOptions.originData = {};
+      if (ajaxOptions.data) {
+        forEach(ajaxOptions.data, (value, key) => {
+          ajaxOptions.originData[key] = value;
+        });
+      }
+    }
     let data;
     if (normalize) {
       data = Object.assign({}, iquery, ajaxOptions.params);
@@ -246,7 +256,7 @@ export default class Ajax {
 
     // headers是否存在json处理
     const isJsonHeader = iHeaders['Content-Type'] && iHeaders['Content-Type'].indexOf('application/json') > -1;
-    const data = ajaxOptions.originData || ajaxOptions.data;
+    const data = isPlainObject(ajaxOptions.data) ? ajaxOptions.originData : ajaxOptions.data;
     // 如果没有指定headers，则把默认的header合并进来
     if (!ajaxOptions.headers) {
       Object.assign(iHeaders, this.set('headers'));
