@@ -180,7 +180,7 @@ export default class Ajax {
   _substitute(ajaxOptions, mutable) {
     const iquery = this.set('query');
     const delimeter = this.set('delimeter');
-    const normalize = ajaxOptions.normalize || this.set('normalize');
+    const normalize = ajaxOptions.normalize === undefined ? this.set('normalize') : ajaxOptions.normalize;
     ajaxOptions.originUrl = ajaxOptions.url;
     ajaxOptions.originData = Object.assign({}, ajaxOptions.data);
     let data;
