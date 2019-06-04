@@ -545,6 +545,8 @@ export function getProcessor(model, initialState, modelName, actionName, func, g
                   payload: ret
                 });
               }
+            }, () => {
+              // handler
             });
             return result;
           } else {

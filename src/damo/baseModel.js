@@ -123,6 +123,8 @@ export const action = (target, name, descriptor) => {
             payload: this.state
           });
         }
+      }, () => {
+        // handler
       });
     } else {
       this.dispatch({

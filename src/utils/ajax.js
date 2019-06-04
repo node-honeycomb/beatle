@@ -423,7 +423,7 @@ export default class Ajax {
       xhr = xhr.catch(err => {
         catchError(err);
         window.console.error(err);
-        return err;
+        return Promise.reject(err);
       });
     }
     return xhr;
