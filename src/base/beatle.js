@@ -4,6 +4,7 @@
  * Beatle是一套基于状态管理机制构建用户界面的框架。采用自底向上增量开发的设计。Beatle 的核心库关注视图结构和视图状态。同时Beatle借助一些前端优秀设计方案，帮你在开发前端应用时节省下大量时间。
  */
 import React from 'react';
+import path from 'path';
 import ReactDOM from 'react-dom';
 import propTypes from 'prop-types';
 import {BrowserRouter, HashRouter, MemoryRouter, Router, widthRouter} from 'react-router-dom';
@@ -471,31 +472,20 @@ export default class Beatle {
           if (item.parent) {
             paths.unshift(ppath);
           } else {
-            paths.unshift(item.navKey ? item.navKey + '/' + ppath : ppath);
+            paths.unshift(item.navKey ? item.navKey + SEP + ppath : ppath);
           }
           item = item.parent;
         }
-        resolvePath = paths.join(SEP).replace(/\/+/g, SEP);
+        resolvePath = path.normalize(paths.join(SEP));
         routeConfig.resolvePath = resolvePath;
       }
     }
-    if (flag) {
-      return resolvePath;
-    } else {
-      if (resolvePath.indexOf('http') === 0) {
-        return resolvePath;
-      } else {
-        if (this._setting.basePath) {
-          if (resolvePath[0] === SEP) {
-            return this._setting.basePath + resolvePath;
-          } else {
-            return this._setting.basePath + SEP + resolvePath;
-          }
-        } else {
-          return resolvePath;
-        }
+    if (!flag) {
+      if (resolvePath.indexOf('http') !== 0 && this._setting.basePath) {
+        resolvePath = this._setting.basePath + SEP + resolvePath;
       }
     }
+    return path.normalize(resolvePath);
   }
 
   _pushRoute(routes, childRoute, parent) {
