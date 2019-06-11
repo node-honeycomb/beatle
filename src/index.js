@@ -11,6 +11,10 @@ import resourceChecker from './base/resource';
 import warning from 'fbjs/lib/warning';
 import messages from './core/messages';
 import StateObserver from './seed/stateObserver';
+
+import isReactComponent from './core/isReactComponent';
+import substitute from './core/substitute';
+import extractModules from './core/extractModules';
 /**
  * ### 提供Link标签，对react-router的Link标签做了Hoc
  *
@@ -202,7 +206,11 @@ Object.assign(Beatle, {
   Poller: Poller,
   ReduxSeed: ReduxSeed,
   Link: BeatleLink,
-  StateObserver: StateObserver
+  StateObserver: StateObserver,
+
+  isReactComponent: isReactComponent,
+  substitute: substitute,
+  extractModules: extractModules
 });
 
 mixinApiToStatic(Beatle);
@@ -278,7 +286,7 @@ const BeatlePro = enhancleBeatle(Beatle);
   };
 });
 
-BeatlePro.prototype.version = '2.0.19';
+BeatlePro.prototype.version = '2.0.20';
 module.exports = BeatlePro;
 
 export default BeatlePro;
