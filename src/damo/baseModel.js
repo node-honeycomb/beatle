@@ -157,14 +157,14 @@ export default class BaseModel {
       const map = {};
       for (let status in reducer) {
         map[status] = (nextStore, payload) => {
-          nextStore[name] = reducer[status](nextStore, payload, this._initialState[name], this.state[name], action);
+          nextStore[name] = reducer[status].call(this, nextStore, payload, this._initialState[name], this.state[name], action);
         };
       }
       return map;
     } else {
       reducer = action.callback || reducer;
       return (nextStore, payload) => {
-        nextStore[name] = reducer(nextStore, payload, this._initialState[name], this.state[name], action);
+        nextStore[name] = reducer.call(this, nextStore, payload, this._initialState[name], this.state[name], action);
       };
     }
   }
