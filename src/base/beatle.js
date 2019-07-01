@@ -87,7 +87,7 @@ export default class Beatle {
       initialEntries: routeType === 'localHistory' ?  Object.keys(this.routesMap) : initialEntries,
       getUserConfirmation: routePrompt,
       basename: _basePath && _basePath[0] !== SEP ? SEP + _basePath : _basePath,
-      children: renderRoutes(_basePath, routes.sort(a => a.fpath ? a.routes ? 0 : -1 : 0))
+      children: renderRoutes(_basePath, routes.sort((a, b) => a.fpath ? a.path > b.path ? -1 : 0 : 0))
     };
   }
 
