@@ -699,7 +699,7 @@ export default class Beatle {
 
           if (parentRoute) {
             parentRoute.routes = parentRoute.routes || [];
-            childRoute = route(parentRoute.path === navKey ? null : this._getName(parentRoute, navKey + '/' + name, level), Comp, {
+            childRoute = route(this._getName(parentRoute, parentRoute.path === navKey ? name : navKey + '/' + name, level), Comp, {
               name: name,
               navKey: navKey,
               strict: option.strict,
