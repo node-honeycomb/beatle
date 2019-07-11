@@ -589,6 +589,18 @@ export default class Beatle {
     }
   }
 
+  _getName(parentRoute, name, level) {
+    if (level > 1) {
+      for (;--level;) {
+        name = parentRoute.name + '/' + name;
+        parentRoute = parentRoute.parent;
+      }
+      return name;
+    } else {
+      return name;
+    }
+  }
+
   // ### 设置多个路由的具体实现
   routesFactory(routesMap = {}, option = {}) {
     routesMap = extractModules(routesMap, (module, key) => key);
@@ -687,7 +699,7 @@ export default class Beatle {
 
           if (parentRoute) {
             parentRoute.routes = parentRoute.routes || [];
-            childRoute = route(parentRoute.path === navKey ? null : navKey + '/' + name, Comp, {
+            childRoute = route(parentRoute.path === navKey ? null : this._getName(parentRoute, navKey + '/' + name, level), Comp, {
               name: name,
               navKey: navKey,
               strict: option.strict,
