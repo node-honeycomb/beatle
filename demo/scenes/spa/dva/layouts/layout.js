@@ -1,7 +1,7 @@
 import React from 'react';
 import styles from './layout.css';
 import Header from './Header';
-import {LoadingBar} from 'hc-components';
+import {LoadingBar} from 'hc-materials';
 
 function MainLayout({children, location}) {
   return (

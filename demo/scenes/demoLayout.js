@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 import Button from 'antd/lib/button';
 import Icon from 'antd/lib/icon';
 import Card from 'antd/lib/card';
-import {GlobalFooter, BasicLayout} from 'hc-components';
+import {GlobalFooter, BasicLayout} from 'hc-materials';
 
 export default class DemoLayout extends BasicLayout {
   static displayName = 'DemoLayout';

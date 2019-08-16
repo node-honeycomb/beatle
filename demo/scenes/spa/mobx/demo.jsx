@@ -1,7 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import Beatle, {observable, computed, action, observer} from '../../../../src';
-import {Sider} from 'hc-components';
+import {Sider} from 'hc-materials';
 // antd组件库
 // > see: https://ant.design/components
 import Layout from 'antd/lib/layout';

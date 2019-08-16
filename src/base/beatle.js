@@ -7,7 +7,7 @@ import React from 'react';
 import path from 'path';
 import ReactDOM from 'react-dom';
 import propTypes from 'prop-types';
-import {BrowserRouter, HashRouter, MemoryRouter, Router, widthRouter} from 'react-router-dom';
+import {BrowserRouter, HashRouter, MemoryRouter, Router, withRouter} from 'react-router-dom';
 import renderRoutes from '../core/renderRoutes';
 import warning from 'fbjs/lib/warning';
 import messages from '../core/messages';
@@ -333,7 +333,7 @@ export default class Beatle {
         </IProvider>);
       }
     }
-    return widthRouter(newComponent);
+    return withRouter(newComponent);
   }
   parseRoute(routeConfig, strict) {
     // #! 如果设置路由是一个子App

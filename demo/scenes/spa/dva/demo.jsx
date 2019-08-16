@@ -1,7 +1,7 @@
 import React from 'react';
 import {Router, Route} from 'react-router';
 import Beatle from '../../../../src';
-import {LoadingBar} from 'hc-components';
+import {LoadingBar} from 'hc-materials';
 
 export default function renderDemo(dom) {
   /**

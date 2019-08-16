@@ -1,4 +1,5 @@
 import Beatle from '../src';
+import 'antd/dist/antd.less';
 import './index.less';
 
 const app = new Beatle({

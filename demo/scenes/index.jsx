@@ -10,7 +10,7 @@ import Modal from 'antd/lib/modal';
 import DocumentTitle from 'react-document-title';
 import DemoLayout from './demoLayout';
 
-import {getLayout, GModal, Sider} from 'hc-components';
+import {getLayout, Sider} from 'hc-materials';
 
 export default class Root extends React.PureComponent {
   static contextTypes = {
@@ -20,7 +20,8 @@ export default class Root extends React.PureComponent {
   static routeOptions = true
 
   static propTypes = {
-    children: PropTypes.element
+    children: PropTypes.element,
+    location: PropTypes.object,
   }
 
   state = {
@@ -44,39 +45,52 @@ export default class Root extends React.PureComponent {
       // 不要页尾
       Footer: false,
       components: {
-        Header: [Sider, Object.assign(option, {
-          header: {
-            style: {position: 'fixed', zIndex: 100000, width: '100%'}
-          },
-          orderKeys: ['single', 'spa', 'complex', 'core'],
-          subMenus: {
-            single: {
-              title: '单组件应用',
-              category: 'beatle'
+        Header: {
+          static: true,
+          props: {
+            style: {position: 'fixed', zIndex: 100000, width: '100%'},
+            ref: inst => {
+              if (inst && !this.state.subMenus) {
+                this.setState({subMenus: inst.props.menuProps.subMenus});
+              }
             },
-            spa: {
-              title: 'SPA应用',
-              category: 'beatle'
+            search: '',
+            profileProps: {
+              nick: 'god',
             },
-            complex: {
-              title: '复杂应用',
-              category: 'beatle'
+            noSider: true,
+            menuProps: {
+              route: this.props.route,
+              routes: this.context.app.getRoutes()[0].routes,
+              orderKeys: ['single', 'spa', 'complex', 'core'],
+              subMenus: {
+                single: {
+                  title: '单组件应用',
+                  category: 'beatle'
+                },
+                spa: {
+                  title: 'SPA应用',
+                  category: 'beatle'
+                },
+                complex: {
+                  title: '复杂应用',
+                  category: 'beatle'
+                },
+                core: {
+                  title: 'Beatle核心模块',
+                  category: 'core'
+                }
+              },
+              menu: {
+                mode: 'horizontal'
+              },
+              brand: {
+                title: 'Beatle项目示例',
+                logo: '//img.alicdn.com/tfs/TB14dINRpXXXXcyXXXXXXXXXXXX-64-64.png?t=1517212583908'
+              },
             },
-            core: {
-              title: 'Beatle核心模块',
-              category: 'core'
-            }
           },
-          ref: inst => inst && !this.state.subMenus && this.setState({subMenus: inst.state.subMenus}),
-          menu: {
-            mode: 'horizontal'
-          },
-          getResolvePath: Beatle.getResolvePath,
-          brand: {
-            title: 'Beatle项目示例',
-            logo: '//img.alicdn.com/tfs/TB14dINRpXXXXcyXXXXXXXXXXXX-64-64.png?t=1517212583908'
-          }
-        })]
+        }
       }
     });
   }
@@ -133,7 +147,7 @@ export default class Root extends React.PureComponent {
   }
 
   render() {
-    const viewContent = this.props.children || this.getOverview();
+    const viewContent = this.props.location.pathname > '/' ? this.props.children : this.getOverview();
     const route = this.props.children && this.props.children.props.route;
     const layout = getLayout({
       layoutOption: this.layoutOption,
@@ -147,7 +161,6 @@ export default class Root extends React.PureComponent {
         <div className="j-scene-all">
           <div className="j-scene-root">
             {layout}
-            <GModal width={600} component={Modal} />
           </div>
         </div>
       </DocumentTitle>

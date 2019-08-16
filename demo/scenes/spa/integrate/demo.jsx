@@ -1,7 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import Beatle from '../../../../src';
-import {getLayout} from 'hc-components';
+import {getLayout} from 'hc-materials';
 // antd组件库
 // > see: https://ant.design/components
 import Table from 'antd/lib/table';
