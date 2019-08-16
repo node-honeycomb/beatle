@@ -7,7 +7,7 @@
  */
 const EMPTY = '';
 
-export default function substitute(str, o, del, delimeter) {
+export default function substitute(str, o, delCb, delimeter) {
   if (typeof str !== 'string' || !o) {
     return str;
   }
@@ -23,8 +23,8 @@ export default function substitute(str, o, del, delimeter) {
       return o[name];
     }
   });
-  if (del) {
-    arr.forEach((a) => delete o[a]);
+  if (delCb) {
+    arr.forEach(delCb);
   }
 
   return newStr;

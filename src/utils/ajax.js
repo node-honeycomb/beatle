@@ -1,6 +1,7 @@
 import fetch from 'isomorphic-fetch';
 import propTypes from 'prop-types';
 import warning from 'fbjs/lib/warning';
+import forEach from 'lodash/forEach';
 import qs from 'qs';
 import ajaxShape from './ajaxShape';
 import Poller from './poller';
@@ -10,7 +11,7 @@ import isPlainObject from '../core/isPlainObject';
 import urllib from 'url';
 
 const noop = (d) => d;
-
+const empty = {};
 /**
  * # Ajax模块
  *
@@ -34,7 +35,7 @@ export default class Ajax {
   static normalize = false;
 
   static stringify = false;
-
+  static catchError = null;
   static beforeRequest = noop;
   static afterResponse = noop;
   static beforeResponse = (response, ajaxOptions) => {
@@ -65,7 +66,7 @@ export default class Ajax {
       }
     } else {
       const error = new Error(response.statusText);
-      error.response = response;
+      error.response = response.json ? response.json() : response;
       response = error;
     }
 
@@ -75,6 +76,8 @@ export default class Ajax {
   static request = (ajaxOptions) => {
     return new Ajax().request(ajaxOptions);
   }
+
+  static query = empty
 
   constructor(options = {}) {
     if (options.origin) {
@@ -98,7 +101,9 @@ export default class Ajax {
    * | afterResponse(fn) | fn `Function` | 接口结果后处理 |
    * | request(options) | options `Object` | 接口请求处理逻辑 |
    */
-  _setting = {};
+  _setting = {
+    query: {}
+  };
   setHeader(headers) {
     if (this._setting.headers) {
       warning(false, messages.duplicateProp, 'setHeader', typeof headers, 'headers', 'Beatle.Ajax');
@@ -158,9 +163,14 @@ export default class Ajax {
       warning(false, messages.invalidProp, 'set', name, 'headers, delimeter, normalize, stringify, beforeRequest, beforeResponse, afterResponse', 'Beatle.Ajax');
     } else {
       if (value === undefined || value === null) {
-        return this._setting[name] || Ajax[name];
+        value = this._setting[name] || Ajax[name];
+        if (value === noop) {
+          return null;
+        } else {
+          return value;
+        }
       } else {
-        if (this._setting[name]) {
+        if (this._setting[name] && (this._setting[name] !== noop || this._setting[name] !== empty)) {
           warning(false, messages.duplicateProp, 'set', name, 'headers, delimeter, normalize, stringify, beforeRequest, beforeResponse, afterResponse', 'Beatle.Ajax');
         }
         this._setting[name] = value;
@@ -169,19 +179,42 @@ export default class Ajax {
   }
 
   _substitute(ajaxOptions, mutable) {
+    const iquery = this.set('query');
     const delimeter = this.set('delimeter');
-    const normalize = ajaxOptions.normalize || this.set('normalize');
+    const normalize = ajaxOptions.normalize === undefined ? this.set('normalize') : ajaxOptions.normalize;
     ajaxOptions.originUrl = ajaxOptions.url;
-    if (mutable && normalize) {
-      const data = isPlainObject(ajaxOptions.data) ? Object.assign({}, ajaxOptions.data) : ajaxOptions.data;
-      ajaxOptions.url = substitute(ajaxOptions.url, data, true, delimeter);
-    } else if (ajaxOptions.params || ajaxOptions.data) {
-      ajaxOptions.url = substitute(ajaxOptions.url, ajaxOptions.params || ajaxOptions.data, false, delimeter);
+    let data;
+    if (normalize) {
+      // #! query merge to originData
+      ajaxOptions.originData = Object.assign({}, iquery);
+      if (mutable) {
+        Object.assign(ajaxOptions.originData, ajaxOptions.data);
+      } else {
+        if (ajaxOptions.data) {
+          if (ajaxOptions.data.forEach) {
+            ajaxOptions.data.forEach((value, key) => {
+              ajaxOptions.originData[key] = value;
+            });
+          } else {
+            forEach(ajaxOptions.data, (value, key) => {
+              ajaxOptions.originData[key] = value;
+            });
+          }
+        }
+      }
+      data = Object.assign(ajaxOptions.originData, ajaxOptions.params);
+      ajaxOptions.url = substitute(ajaxOptions.url, ajaxOptions.originData, (n) => delete ajaxOptions.originData[n], delimeter);
+    } else {
+      // #! originData equals to data;
+      ajaxOptions.originData = ajaxOptions.data;
+      data = Object.assign({}, iquery, ajaxOptions.params);
+      ajaxOptions.url = substitute(ajaxOptions.url, Object.keys(data).length ? data : ajaxOptions.originData, null, delimeter);
     }
   }
 
   // #! 走params形式包装ajaxOptions
   _formatQuery(ajaxOptions, needMerge) {
+    const data = ajaxOptions.originData;
     // 解析url，并把queryStr解析为object
     const u = urllib.parse(ajaxOptions.url, true);
     if (this._uri && !u.host) {
@@ -191,7 +224,7 @@ export default class Ajax {
     }
     if (needMerge) {
       // 合并ajaxOptions.data到query，重复的key被data中的值替换
-      u.query = Object.assign(u.query || {}, ajaxOptions.data);
+      u.query = Object.assign(u.query || {}, data);
       // 去除search属性，在format函数中，如果存在search，那么query解析为queryStr不被接收
       const query = qs.stringify(u.query, ajaxOptions.qsOption);
       u.search = (query && ('?' + query)) || '';
@@ -225,6 +258,7 @@ export default class Ajax {
 
     // headers是否存在json处理
     const isJsonHeader = iHeaders['Content-Type'] && iHeaders['Content-Type'].indexOf('application/json') > -1;
+    const data = mutable ? ajaxOptions.originData : ajaxOptions.data;
     // 如果没有指定headers，则把默认的header合并进来
     if (!ajaxOptions.headers) {
       Object.assign(iHeaders, this.set('headers'));
@@ -237,12 +271,12 @@ export default class Ajax {
     // 如果存在json处理，或者method不为GET、DELETE
     if (isJsonHeader || !(ajaxOptions.method === 'GET' || ajaxOptions.method === 'DELETE')) {
       if (mutable) {
-        extraOption.body = stringify ? qs.stringify(ajaxOptions.data, ajaxOptions.qsOption) : JSON.stringify(ajaxOptions.data);
+        extraOption.body = stringify ? qs.stringify(data, ajaxOptions.qsOption) : JSON.stringify(data);
         if (!ajaxOptions.headers) {
           iHeaders['Content-Type'] =  stringify ? 'application/x-www-form-urlencoded' : 'application/json; charset=utf-8';
         }
       } else {
-        extraOption.body = ajaxOptions.data;
+        extraOption.body = data;
       }
       extraOption.url = this._formatQuery(ajaxOptions);
     } else {
@@ -253,6 +287,7 @@ export default class Ajax {
     delete ajaxOptions.stringify;
     delete ajaxOptions.normalize;
     delete ajaxOptions.mutable;
+    delete ajaxOptions.originData;
     /**
      * ### 常用配置
      *
@@ -326,9 +361,11 @@ export default class Ajax {
     let beforeRequest = ajaxOptions.beforeRequest;
     let beforeResponse = ajaxOptions.beforeResponse;
     let afterResponse = ajaxOptions.afterResponse;
+    let catchError = ajaxOptions.catchError;
     delete ajaxOptions.beforeRequest;
     delete ajaxOptions.beforeResponse;
     delete ajaxOptions.afterResponse;
+    delete ajaxOptions.catchError;
 
     beforeRequest = beforeRequest || this.set('beforeRequest');
     const processorResult = beforeRequest(ajaxOptions);
@@ -356,7 +393,8 @@ export default class Ajax {
       xhr = fetch(ajaxOptions.url, ajaxOptions).then((response) => {
         beforeResponse = beforeResponse || this.set('beforeResponse');
         return beforeResponse(response, ajaxOptions, xhr);
-      }).catch(err => {
+      });
+      xhr.catch(err => {
         callback && callback(err, null, xhr);
       });
     }
@@ -378,8 +416,16 @@ export default class Ajax {
       }
       return result;
     }, (err) => {
-      callback && callback(err, null, xhr);
+      return callback && callback(err, null, xhr);
     });
+    catchError = catchError || this.set('catchError');
+    if (catchError) {
+      xhr = xhr.catch(err => {
+        catchError(err);
+        window.console.error(err);
+        return Promise.reject(err);
+      });
+    }
     return xhr;
   }
 

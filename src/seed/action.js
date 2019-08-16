@@ -7,6 +7,120 @@ import warning from 'fbjs/lib/warning';
 import BaseModel from '../damo/baseModel';
 import reducerImmediate from './reducerImmediate';
 
+/**
+ * bindings = ['model'], flattern = false
+ * => {model: xxx}
+ * bindings = ['model.state'], flattern = false
+ * => {model: xxx}
+ * bindings = ['model.actions'], flattern = false
+ * => {model: xxx}
+ * bindings = ['model.state.name'], flattern = false
+ * => {model: xxx}
+ * bindings = [{name: 'model.state.name'}], flattern = false|true
+ * => {name: xxx}
+ * bindings = [{name: {test: 1}}], flattern = false|true
+ * => {name: {test: 1}}
+ */
+function getStateByModel(redux, binding, flattern, wrappers, attrKey) {
+  const keys = binding.split('.');
+  const modelName = keys.shift();
+  attrKey = attrKey || modelName;
+  const model = {
+    state: redux.state[modelName] || {},
+    actions: redux.actions[modelName] || {}
+  };
+  let iState;
+  let wrapper;
+  let name;
+  const cate = keys[0];
+  if (keys.length) {
+    wrapper = wrappers[cate];
+    if (wrapper) {
+      iState = wrapper(model[keys.shift()]);
+      name = keys.shift();
+      while (name) {
+        iState = iState[name];
+        name = keys.shift();
+      }
+    } else if (!model[cate] && redux[cate]) {
+      // support global function
+      flattern = true;
+      iState = {
+        [cate]: redux[cate].bind(null, modelName)
+      };
+    }
+  } else {
+    iState = {};
+    Object.keys(wrappers).forEach(name => {
+      wrapper = wrappers[name];
+      Object.assign(iState, wrapper(model[name]));
+    });
+  }
+  if (flattern) {
+    return iState;
+  } else {
+    return {
+      [attrKey]: iState
+    };
+  }
+}
+
+export function getStateByModels(redux, bindings, flattern, wrappers, cacheMap) {
+  let stateProps = {};
+  let keys;
+  let mState;
+  try {
+    bindings.forEach((binding) => {
+      if (typeof binding === 'string') {
+        if (!cacheMap[binding]) {
+          mState = getStateByModel(redux, binding, flattern, wrappers);
+          if (mState && !mState[binding]) {
+            cacheMap[binding] = true;
+          }
+        }
+      } else {
+        mState = {};
+        for (let modelName in binding) {
+          if (!cacheMap[modelName]) {
+            if (Object(binding[modelName]) === binding[modelName]) {
+              mState[modelName] = binding[modelName];
+            } else if (typeof binding[modelName] === 'string') {
+              Object.assign(mState, getStateByModel(redux, binding[modelName], false, wrappers, modelName));
+            }
+            if (mState[modelName] === undefined) {
+              delete mState[modelName];
+            } else {
+              cacheMap[modelName] = true;
+            }
+          }
+        }
+      }
+      Object.assign(stateProps, mState);
+    });
+  } catch (e) {
+    warning(false, messages.selectError, 'select', keys, 'seed', 'Beatle');
+    window.console.error(e);
+  }
+  return stateProps;
+}
+
+export function getActionsByDispatch(actions, dispatch) {
+  const actionCreators = {};
+  for (let name in actions) {
+    actionCreators[name] = (...args) => {
+      const result = actions[name].apply(null, args);
+      if (result && result.then) {
+        return result;
+      } else if (typeof result === 'function') {
+        return result(dispatch);
+      } else if (result !== undefined) {
+        return dispatch(result);
+      }
+    };
+  }
+  return actionCreators;
+}
+
 export function setReducers(model, modelName, actionName, actionCfg, async) {
   const callback = typeof actionCfg === 'function' ? actionCfg : actionCfg.reducer || actionCfg.callback || noop;
   let type;
@@ -123,19 +237,18 @@ export function getActions({
     }
   });
 
-  const actions = model.actions ? model.actions : model.actions = {};
-  model._actions = model._actions;
-  if (!model._actions) {
-    model._actions = {};
-    if (model instanceof BaseModel) {
-      const keys = Object.getOwnPropertyNames(model.__proto__);
-      for (let i = 1, len = keys.length; i < len; i++) {
-        if (typeof model[keys[i]] === 'function') {
-          model._actions[keys[i]] = model[keys[i]].bind(model);
-        }
+  const actions = model.actions || {};
+  model.actions = {};
+  model._actions = model._actions || {};
+  if (model instanceof BaseModel) {
+    const keys = Object.getOwnPropertyNames(model.__proto__);
+    for (let i = 1, len = keys.length; i < len; i++) {
+      if (typeof model[keys[i]] === 'function') {
+        model.actions[keys[i]] = model[keys[i]].bind(model);
       }
     }
   }
+
   // #! 大有用处：设置更新版本
   model.__setIncrement = () => {
     seed.increment();
@@ -237,20 +350,20 @@ export function getActions({
       if (exec) {
         // #! 异步action
         setReducers(model, modelName, actionKey, actionCfg, true);
-        actionCfg._processor = model._actions[actionKey] = getProcessorByExec(model, initialState, modelName, actionKey, exec, fetch);
+        actionCfg._processor = model.actions[actionKey] = getProcessorByExec(model, initialState, modelName, actionKey, exec, fetch, exec.noDispatch);
       } else {
         setReducers(model, modelName, actionKey, actionCfg);
         if (isGenerator(actionCfg)) {
           model.effects[actionKey] = actionCfg;
 
-          actionCfg._processor = model._actions[actionKey] = getProcessorByGenerator(model, initialState, modelName, actionKey, saga);
+          actionCfg._processor = model.actions[actionKey] = getProcessorByGenerator(model, initialState, modelName, actionKey, saga);
         } else {
-          actionCfg._processor = model._actions[actionKey] = getProcessor(model, initialState, modelName, actionKey, actionCfg, () => seed.getStore().getState()[modelName]);
+          actionCfg._processor = model.actions[actionKey] = getProcessor(model, initialState, modelName, actionKey, actionCfg, () => seed.getStore().getState()[modelName]);
         }
       }
       Object.defineProperty(actions, actionKey, {
         get: () => {
-          return (...args) => model._actions[actionKey].apply(model, args)(model.dispatch);
+          return (...args) => model.actions[actionKey].apply(model, args)(model.dispatch);
         },
         enumerable: false
       });
@@ -262,7 +375,7 @@ export function getActions({
     saga.effect(model);
   }
 
-  return model._actions;
+  return model.actions;
 }
 
 function noop() {}
@@ -288,10 +401,14 @@ export function getProcessorByExec(model, initialState, modelName, actionName, e
           reject(error);
         };
         const successCallback = function (data) {
-          if (!noDispatch) {
-            dispatch({type: statusMap.success, payload: {data: data, store: initialState, arguments: args, exec: exec}});
+          if (data instanceof Error) {
+            errorCallback(data);
+          } else {
+            if (!noDispatch) {
+              dispatch({type: statusMap.success, payload: {data: data, store: initialState, arguments: args, exec: exec}});
+            }
+            resolve(data);
           }
-          resolve(data);
         };
 
         let result;
@@ -339,7 +456,7 @@ export function getProcessorByGenerator(model, initialState, modelName, actionNa
         args.pop();
       }
       if (noDispatch) {
-        return model._actions[actionName].apply(model, ...args);
+        return model.actions[actionName].apply(model, ...args);
       } else {
         const actionKey = typeToAction(modelName, actionName);
         dispatch({
@@ -421,10 +538,16 @@ export function getProcessor(model, initialState, modelName, actionName, func, g
           return Promise.resolve(undefined);
         } else {
           if (result && result.then) {
-            result.then((ret) => showDispatch({
-              type: model.ACTION_TYPE_IMMEDIATE,
-              payload: ret
-            }));
+            result.then((ret) => {
+              if (!(ret instanceof Error)) {
+                showDispatch({
+                  type: model.ACTION_TYPE_IMMEDIATE,
+                  payload: ret
+                });
+              }
+            }, () => {
+              // handler
+            });
             return result;
           } else {
             if (result) {
@@ -443,7 +566,7 @@ export function getProcessor(model, initialState, modelName, actionName, func, g
         dispatch({
           type: encodeActionType(modelName, actionName),
           payload: {
-            data: func && func.data,
+            data: func ? func.data : null,
             arguments: args,
             store: initialState
           }

@@ -8,8 +8,9 @@ export default function modelToReducer(model, initialState, isImmutable) {
     const reducer = model._reducers[action.type];
     let nextStore = store;
     if (reducer) {
-      model.__setIncrement();
-      const prevStore = new StateObserver(store, model.state);
+      const prevStore = new StateObserver(store, model.state, () => {
+        model.__setIncrement();
+      });
       /**
        * ### 每个action的副作用的执行
        *
@@ -29,8 +30,9 @@ export default function modelToReducer(model, initialState, isImmutable) {
       } else {
         model.state = nextStore.asMutable ? nextStore.asMutable({deep: true}) : nextStore;
       }
+      return isImmutable ? immutable(nextStore) : nextStore;
+    } else {
+      return nextStore;
     }
-
-    return isImmutable ? immutable(nextStore) : nextStore;
   };
 }

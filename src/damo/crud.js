@@ -1,18 +1,31 @@
+const LOADING = 'false';
+const TOTAL = '0';
+const PAGE = '1';
+const PAGESIZE = '10';
+const DATA = '[]';
+
+const propsMap = {
+  [LOADING]: 'total',
+  [TOTAL]: 'total',
+  [PAGE]: 'page',
+  [PAGESIZE]: 'pageSize',
+  [DATA]: 'data'
+};
+
 function getQuery(obj) {
-  if (obj.data && obj.total !== undefined) {
-    return obj;
-  }
+  const dataPropName = propsMap[DATA];
+  return Array.isArray(obj[dataPropName]) ? obj : null;
 }
 function updateQuery(obj, increment) {
-  obj.total = obj.total + increment;
-  obj.loading = false;
+  obj[propsMap[TOTAL]] = obj[propsMap[TOTAL]] + increment;
+  obj[propsMap[LOADING]] = false;
   if (increment) {
-    if (obj.data.length > obj.pageSize) {
-      obj.data.pop();
-      while (obj.data.length > obj.pageSize) {
-        obj.data.pop();
+    if (obj[propsMap[DATA]].length > obj[propsMap[PAGESIZE]]) {
+      obj[propsMap[DATA]].pop();
+      while (obj[propsMap[DATA]].length > obj[propsMap[PAGESIZE]]) {
+        obj[propsMap[DATA]].pop();
       }
-      obj.page = obj.page + 1;
+      obj[propsMap[PAGE]] = obj[propsMap[PAGE]] + 1;
     }
   }
 }
@@ -20,7 +33,7 @@ function updateQuery(obj, increment) {
 function append(currentState, state, action, byMerge) {
   const query = getQuery(currentState);
   if (query) {
-    currentState = currentState.data;
+    currentState = currentState[propsMap[DATA]];
   }
 
   if (Array.isArray(currentState)) {
@@ -66,7 +79,7 @@ function append(currentState, state, action, byMerge) {
   }
   return query || currentState;
 }
-function getState(payload, processData, pure) {
+function getState(payload, processData, action, pure) {
   const data = processData ? processData(payload.data) : payload.data;
   if (pure) {
     return data;
@@ -97,20 +110,33 @@ const crud = {
   },
 
   item: {},
-  itemsEntry: {
+  _itemsEntry: {
     data: [],
     loading: false,
     total: 0,
     pageSize: 10,
     page: 1
   },
+  get itemsEntry() {
+    return crud._itemsEntry;
+  },
+  set itemsEntry(itemsEntry) {
+    crud._itemsEntry = itemsEntry;
+    Object.keys(itemsEntry).forEach(key => {
+      propsMap[itemsEntry[key].valueOf()] = key;
+    });
+  },
   list: [],
   noop: () => {},
   reset: (nextState, payload, initialState) => {
     return initialState;
   },
+  forceUpdate: (nextState) => {
+    nextState.forceUpdate && nextState.forceUpdate();
+    return nextState;
+  },
   create: (nextState, payload, initialState, currentState, action) => {
-    const state = getState(payload, action.processData);
+    const state = getState(payload, action.processData, action);
     if (state) {
       if (parseInt(payload.data, 10)) {
         state[action.cid || 'id'] = payload.data;
@@ -121,7 +147,7 @@ const crud = {
     }
   },
   update: (nextState, payload, initialState, currentState, action) => {
-    const state = getState(payload, action.processData);
+    const state = getState(payload, action.processData, action);
 
     if (state) {
       return append(currentState, state, action, true);
@@ -130,17 +156,17 @@ const crud = {
     }
   },
   delete: (nextState, payload, initialState, currentState, action) => {
-    const state = getState(payload, action.processData);
+    const state = getState(payload, action.processData, action);
     const query = getQuery(currentState);
     if (query) {
-      currentState = currentState.data;
+      currentState = currentState[propsMap[DATA]];
     }
     if (action.cid) {
       const id = state[action.cid] + '';
       if (Array.isArray(currentState)) {
         let count = 0;
         currentState = currentState.filter(d => {
-          if (id.indexOf(d[action.cid]) > -1) {
+          if (id === String(d[action.cid])) {
             count++;
             return false;
           } else {
@@ -148,7 +174,7 @@ const crud = {
           }
         });
         if (query && count) {
-          query.data = currentState;
+          query[propsMap[DATA]] = currentState;
           updateQuery(query, -count);
         }
       } else {
@@ -160,7 +186,7 @@ const crud = {
     return query || currentState;
   },
   get: (nextState, payload, initialState, currentState, action) => {
-    return getState(payload, action.processData, true);
+    return getState(payload, action.processData, action, true) || initialState;
   },
   query: (nextState, payload, initialState, currentState, action) => {
     const data = action.processData ? action.processData(payload.data) : payload.data;
@@ -173,7 +199,7 @@ const crud = {
         loading: false
       };
     } else {
-      return data;
+      return data || initialState;
     }
   }
 };

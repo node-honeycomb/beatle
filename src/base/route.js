@@ -1,8 +1,8 @@
 import React from 'react';
-
+import isReactComponent from '../core/isReactComponent';
 function mergeRouteOptions(routeConfig) {
-  if (routeConfig.childRoutes) {
-    routeConfig.childRoutes.forEach(child => {
+  if (routeConfig.routes) {
+    routeConfig.routes.forEach(child => {
       if (child.component && child.component.routeOptions) {
         mergeRouteOptions(Object.assign(child, child.component.routeOptions));
       }
@@ -14,11 +14,12 @@ function mergeRouteOptions(routeConfig) {
 export default function route(path, RouteComponent, option = {}) {
   const routeConfig = Object.assign({
     resolvePath: path,
-    path: path,
+    path: path || option.name,
     name: option.name,
     navKey: option.navKey,
     component: RouteComponent,
-    fpath: option.fpath
+    fpath: option.fpath,
+    parent: option.parent
   }, RouteComponent.routeOptions);
   // 把子路由组件的routeOptions也合并进来
   mergeRouteOptions(routeConfig);
@@ -29,7 +30,7 @@ export default function route(path, RouteComponent, option = {}) {
 
   const indexRoute = routeConfig.indexRoute;
   if (indexRoute) {
-    if (indexRoute.prototype && indexRoute.prototype.isReactComponent) {
+    if (isReactComponent(indexRoute)) {
       routeConfig.indexRoute = Object.assign({
         component: indexRoute
       }, indexRoute.routeOptions);
@@ -57,7 +58,7 @@ export default function route(path, RouteComponent, option = {}) {
     const element = routeConfig.component;
     routeConfig.component = () => element;
     // function component, 必须存在props作为第一个参数
-  } else if (!routeConfig.component.prototype.isReactComponent && routeConfig.component.toString().split(')')[0].split('(').pop() !== 'props') {
+  } else if (!isReactComponent(routeConfig.component)) {
     routeConfig.getComponent = routeConfig.component;
     delete routeConfig.component;
   }

@@ -3,8 +3,12 @@ export default (nextStore, state) => {
   if (nextStore.asMutable) {
     nextStore = nextStore.merge(state);
   } else {
-    // #! todo 需要判断key来源
-    nextStore = Object.assign({}, nextStore, state);
+    Object.keys(state).forEach((name) => {
+      // 严格判断存在属性
+      if (Object.prototype.hasOwnProperty.call(nextStore, name)) {
+        nextStore[name] = state[name];
+      }
+    });
   }
   return nextStore;
 };

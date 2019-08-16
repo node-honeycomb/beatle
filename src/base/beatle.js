@@ -4,25 +4,24 @@
  * Beatle是一套基于状态管理机制构建用户界面的框架。采用自底向上增量开发的设计。Beatle 的核心库关注视图结构和视图状态。同时Beatle借助一些前端优秀设计方案，帮你在开发前端应用时节省下大量时间。
  */
 import React from 'react';
+import path from 'path';
 import ReactDOM from 'react-dom';
 import propTypes from 'prop-types';
-import {Router, browserHistory, hashHistory} from 'react-router';
-import useBasename from 'history/lib/useBasename';
-import createMemoryHistory from 'react-router/lib/createMemoryHistory';
-import useRouterHistory from 'react-router/lib/useRouterHistory';
-// import createRouterHistory from 'react-router/lib/createRouterHistory';
-import _get from 'lodash/get';
+import {BrowserRouter, HashRouter, MemoryRouter, Router, widthRouter} from 'react-router-dom';
+import renderRoutes from '../core/renderRoutes';
 import warning from 'fbjs/lib/warning';
 import messages from '../core/messages';
 
 import isPlainObject from '../core/isPlainObject';
 import extractModules from '../core/extractModules';
+import isReactComponent from '../core/isReactComponent';
 import ReduxSeed from '../seed';
 import connect from './connect';
 import route from './route';
 import modelChecker from './model';
 import getProvider from './provider';
 import Ajax from '../utils/ajax';
+import {getStateByModels, getActionsByDispatch} from '../seed/action';
 
 /**
  * ### 应用初始化依赖的配置项
@@ -31,6 +30,7 @@ import Ajax from '../utils/ajax';
  * |: ------ |: ------ |: ------ |
  * | name `String` | 应用实例名 | `app` |
  * | store `Object` | 应用数据中心的初始化数据 | `{}` |
+ * | freeze `Boolean` | 状态数据是否保持冻结不可变，store为undefined时表示冻结 | N/A |
  * | middlewares `Array` | 应用数据处理中间件，通过中间件可以变更数据结果 | `[]` |
  * | ajax `Object` | 应用接口请求对象初始化依赖的配置项 | `{}` |
  * | root `DOM` | 应用唯一挂载的DOM树节点 | `document.body` |
@@ -45,6 +45,7 @@ import Ajax from '../utils/ajax';
  */
 const beatleShape = {
   name: propTypes.string,
+  freeze: propTypes.bool,
   store: propTypes.object,
   middlewares: propTypes.array,
   ajax: propTypes.object,
@@ -58,29 +59,50 @@ const beatleShape = {
   routeType: propTypes.oneOfType([propTypes.object, propTypes.string])
 };
 const SEP = '/';
-function createRouterHistory(createHistory) {
-  let canUseDOM = !!(typeof window !== 'undefined' && window.document && window.document.createElement);
-  let history = void 0;
-  if (canUseDOM) {
-    history = useRouterHistory(createHistory)({
-      entries: [{
-        pathname: window.location.pathname,
-        search: window.location.search
-      }]
-    });
-  }
-  return history;
-}
-const historys = {
-  localHistory: createRouterHistory(createMemoryHistory),
-  hashHistory: hashHistory,
-  browserHistory: browserHistory
+
+const initialEntries = [{
+  pathname: window.location.pathname,
+  search: window.location.search
+}];
+const RouterByType = {
+  localHistory: MemoryRouter,
+  hashHistory: HashRouter,
+  browserHistory: BrowserRouter
 };
+
 export default class Beatle {
   // #! 静态属性不对外开放，包括未初始化时的函数列表、默认应用实例、所有实例。
   static fireCallbacks = {};
   static defaultApp = null;
   static instances = {};
+
+  _getRouterProps(routes, _basePath) {
+    const {basePath, routeType, routePrompt} = this._setting;
+    if (_basePath) {
+      this._setting.basePath = _basePath;
+    } else {
+      _basePath = basePath;
+    }
+    return {
+      initialEntries: routeType === 'localHistory' ?  Object.keys(this.routesMap) : initialEntries,
+      getUserConfirmation: routePrompt,
+      basename: _basePath && _basePath[0] !== SEP ? SEP + _basePath : _basePath,
+      children: renderRoutes(_basePath, routes.sort((a, b) => a.fpath ? a.path > b.path ? -1 : 0 : 0))
+    };
+  }
+
+  _getRouter(routeType) {
+    let HistoryRouter;
+    if (Object(routeType) === routeType) {
+      /* eslint-disable react/prop-types, react/display-name */
+      HistoryRouter = ({children}) => {
+        return (<Router history={routeType} >{children}</Router>);
+      };
+    } else {
+      HistoryRouter = RouterByType[routeType] || BrowserRouter;
+    }
+    return HistoryRouter;
+  }
 
   constructor(options = {}) {
     propTypes.checkPropTypes(beatleShape, options, 'BeatleOptions', 'Beatle');
@@ -90,12 +112,14 @@ export default class Beatle {
     this._setting = {
       basePath: options.base || '',
       query: options.env,
+      level: options.level,
       appName: name,
       seedName: name + new Date().getTime(),
       rootDom: options.root || document.body,
       routes: [],
       routesMap: {},
-      history: Object(options.routeType) === options.routeType ? options.routeType : historys[options.routeType] || historys.browserHistory
+      HistoryRouter: this._getRouter(options.routeType),
+      routePrompt: options.routePrompt
     };
     this._middlewares = [];
     this.seed = null;
@@ -175,7 +199,14 @@ export default class Beatle {
 
     const middlewares = options.middlewares || [];
     middlewares.push(this._getMiddleWareFactory());
-    this.seed = new ReduxSeed({name: this._setting.seedName, initialState: options.store, middlewares: middlewares, Models: Models, ajax: this.ajax});
+    this.seed = new ReduxSeed({
+      name: this._setting.seedName,
+      freeze: options.freeze,
+      initialState: options.store,
+      middlewares: middlewares,
+      Models: Models,
+      ajax: this.ajax
+    });
 
     // #! 自动加载路由
     if (options.autoLoadRoute && Beatle.autoLoad.loadRoutes) {
@@ -202,6 +233,10 @@ export default class Beatle {
 
   get basename() {
     return this._setting.basePath;
+  }
+
+  get setting() {
+    return this._setting;
   }
 
   /**
@@ -232,16 +267,6 @@ export default class Beatle {
     };
   }
 
-  _withBasename(basePath) {
-    if (basePath) {
-      if (basePath[0] !== SEP) {
-        basePath = SEP + basePath;
-      }
-      return useBasename(() => this._setting.history)({basename: basePath});
-    } else {
-      return this._setting.history;
-    }
-  }
   _parsePath(path, name) {
     if (path) {
       path = path.replace('/:name', '/' + name);
@@ -250,16 +275,20 @@ export default class Beatle {
     }
     return path;
   }
+
   _convertAppToComponent(appComponent, basePath, routeType) {
     const self = this;
     if (!appComponent.parent) {
       appComponent.parent = self;
       const baseName = basePath[0] === '/' ? basePath : self._setting.basePath + SEP + basePath;
-      appComponent._setting.history = Object(routeType) === routeType ? routeType : historys[routeType] || appComponent._setting.history;
+
+      // 路由组件
+      appComponent._setting.Router = this._getRouter(routeType || appComponent._setting.history);
+
       let key;
       let _routeCfg;
       // 相同路由下增加路径
-      if (self._setting.history === appComponent._setting.history) {
+      if (self._setting.HistoryRouter === appComponent._setting.HistoryRouter) {
         appComponent._setting.basePath = ''; // this._setting.basePath;
         appComponent.parent = self;
         for (key in appComponent._setting.routesMap) {
@@ -284,24 +313,27 @@ export default class Beatle {
           }
         }
       } else {
-        appComponent._activeHistory = appComponent._setting.history = appComponent._withBasename(baseName);
+        appComponent._setting.basePath = appComponent._getBasePath(baseName);
       }
     }
-    const IProvider = getProvider(appComponent.injector, appComponent.globalInjector);
-    const history = appComponent._setting.history;
 
     class newComponent extends React.PureComponent {
       static routeOptions = appComponent.routeOptions || {};
       render() {
-        if (!appComponent._activeHistory) {
-          appComponent._activeHistory = self._activeHistory;
-        }
+        const IRouter = appComponent._setting.HistoryRouter;
+        const IProvider = getProvider(appComponent.injector, appComponent.globalInjector);
         return (<IProvider store={appComponent.getStore()}>
-          <Router history={history} routes={appComponent._setting.routes} />
+          <IRouter {...appComponent._getRouterProps(appComponent._setting.routes)} ref={inst => {
+            if (inst) {
+              this._activeHistory = inst.history;
+              /* eslint-disable react/no-find-dom-node */
+              this.storeContainer = ReactDOM.findDOMNode(inst);
+            }
+          }} />
         </IProvider>);
       }
     }
-    return newComponent;
+    return widthRouter(newComponent);
   }
   parseRoute(routeConfig, strict) {
     // #! 如果设置路由是一个子App
@@ -381,8 +413,8 @@ export default class Beatle {
         if (item.component && item.component.routeOptions) {
           Object.assign(item, item.component.routeOptions);
         }
-        if (item.childRoutes) {
-          this.setRoutes(item.childRoutes, null, item);
+        if (item.routes) {
+          this.setRoutes(item.routes, null, item);
         }
       });
     } else {
@@ -439,31 +471,20 @@ export default class Beatle {
           if (item.parent) {
             paths.unshift(ppath);
           } else {
-            paths.unshift(item.navKey ? item.navKey + '/' + ppath : ppath);
+            paths.unshift(item.navKey ? item.navKey + SEP + ppath : ppath);
           }
           item = item.parent;
         }
-        resolvePath = paths.join(SEP).replace(/\/+/g, SEP);
+        resolvePath = path.normalize(paths.join(SEP));
         routeConfig.resolvePath = resolvePath;
       }
     }
-    if (flag) {
-      return resolvePath;
-    } else {
-      if (resolvePath.indexOf('http') === 0) {
-        return resolvePath;
-      } else {
-        if (this._setting.basePath) {
-          if (resolvePath[0] === SEP) {
-            return this._setting.basePath + resolvePath;
-          } else {
-            return this._setting.basePath + SEP + resolvePath;
-          }
-        } else {
-          return resolvePath;
-        }
+    if (!flag) {
+      if (resolvePath.indexOf('http') !== 0 && this._setting.basePath) {
+        resolvePath = this._setting.basePath + SEP + resolvePath;
       }
     }
+    return path.normalize(resolvePath);
   }
 
   _pushRoute(routes, childRoute, parent) {
@@ -550,8 +571,8 @@ export default class Beatle {
       // #! 设置路由
       if (routeConfig) {
         RouteComponent.routeOptions = Object.assign(RouteComponent.routeOptions || {}, routeConfig);
-        if (routeConfig.childRoutes) {
-          this.setRoutes(routeConfig.childRoutes, null, routeConfig);
+        if (routeConfig.routes) {
+          this.setRoutes(routeConfig.routes, null, routeConfig);
         }
       }
       const childRoute = route(path, RouteComponent, {
@@ -578,7 +599,7 @@ export default class Beatle {
       };
     }
     const routeCallback = option.callback || this.parseRoute.bind(this);
-    const leave = option.leave || 1;
+    const level = option.level || 1;
     if (option.strict === undefined) {
       option.strict = true;
     }
@@ -631,7 +652,7 @@ export default class Beatle {
         let childRoute;
 
         // #! 路径短于指定级别时都认为一级路由处理
-        if (keys.length < leave) {
+        if (keys.length < level) {
           childRoute = route(keys[0] || SEP, Comp, {
             name: keys[0] || SEP,
             strict: option.strict,
@@ -653,7 +674,7 @@ export default class Beatle {
             // 当前路由路径来决定应该在哪个子路由下
             while ((key = keys.shift()) && (temp = children.find((item) => item.name === key))) {
               parentRoute = temp;
-              children = parentRoute.childRoutes || [];
+              children = parentRoute.routes || [];
             }
           }
           // #! 不存在父级路由，则直接挂在一级路由下
@@ -661,22 +682,22 @@ export default class Beatle {
             parentRoute = children.find(function (item) {
               return item.name === SEP;
             });
-            children = parentRoute.childRoutes || [];
+            children = parentRoute.routes || [];
           }
 
           if (parentRoute) {
-            parentRoute.childRoutes = parentRoute.childRoutes || [];
+            parentRoute.routes = parentRoute.routes || [];
             childRoute = route(parentRoute.path === navKey ? null : navKey + '/' + name, Comp, {
               name: name,
               navKey: navKey,
               strict: option.strict,
               callback: routeCallback,
               fpath: relativePath,
+              parent: parentRoute,
               fromLazy: com => Beatle.fromLazy(com, this)
             });
             if (childRoute) {
-              childRoute.parent = parentRoute;
-              this._pushRoute(parentRoute.childRoutes, childRoute);
+              this._pushRoute(parentRoute.routes, childRoute);
             }
           } else {
             childRoute = route(null, Comp, {
@@ -773,12 +794,12 @@ export default class Beatle {
      *
      * ```
      *  app.connect({
-     *    profile: 'user.store.profile',
+     *    profile: 'user.state.profile',
      *    getUser: 'user.actions.getUser'
      *  }, Component)
      * ```
      */
-    if (models.prototype && models.prototype.isReactComponent) {
+    if (isReactComponent(models)) {
       SceneComponent = models;
       if (SceneComponent.getState) {
         models = (store, props) => SceneComponent.getState(store['__pure_reducer__'], props);
@@ -792,100 +813,27 @@ export default class Beatle {
 
   toBindings(bindings, flattern, context) {
     // #! 从redux模块中获取model实例和所有的action
-    const {models, actions} = ReduxSeed.getRedux(this._setting.seedName);
-
+    const {store, actions} = ReduxSeed.getRedux(this._setting.seedName);
+    const put = (name, state) => {
+      return this.put(name, state);
+    };
+    const select = (name, noFlattern) => {
+      return this.select(name, noFlattern);
+    };
     return {
       flattern: flattern,
-      dataBindings: typeof bindings[0] === 'function' ? bindings[0].bind(context) : (state) => {
-        const iState = {};
-        bindings.forEach((binding) => {
-          if (typeof binding === 'string') {
-            let mState = {};
-            if (models[binding]) {
-              const store = models[binding].state || models[binding].store;
-              for (let key in store) {
-                mState[key] = state[binding][key];
-              }
-            }
-
-            if (flattern) {
-              Object.assign(iState, mState);
-            } else {
-              iState[binding] = mState;
-            }
-          } else {
-            for (let key in binding) {
-              if (Object(binding[key]) === binding[key]) {
-                iState[key] = binding[key];
-              } else if (typeof binding[key] === 'string') {
-                let keys = binding[key].split('.');
-                let mState = {};
-                if (models[keys[0]] && (keys[1] === 'store' || keys[1] === 'state')) {
-                  // #! see > http://lodashjs.com/docs/#_getobject-path-defaultvalue
-                  mState[key] = _get(state[keys[0]], keys.slice(2));
-                }
-                if (flattern) {
-                  Object.assign(iState, mState);
-                } else {
-                  iState[keys[0]] = mState;
-                }
-              }
-            }
-          }
-        });
-        return iState;
+      dataBindings: typeof bindings[0] === 'function' ? bindings[0].bind(context) : () => {
+        bindings._sign = {};
+        return getStateByModels({state: store.getState(), actions: actions, put: put, select: select}, bindings, flattern, {
+          state: (d) => this.seed._isImmutable ? this.seed.serialize(d) : d
+        }, bindings._sign);
       },
       eventBindings: typeof bindings[1] === 'function' ? (dispatch, props) => bindings[1].call(context, dispatch, props, actions) : (dispatch) => {
-        const iAction = {};
-        bindings.forEach((binding) => {
-          if (typeof binding === 'string' && actions[binding]) {
-            let mAction = {};
-            for (let key in actions[binding]) {
-              mAction[key] = (...args) => {
-                const result = actions[binding][key].apply(null, args);
-                if (result && result.then) {
-                  return result;
-                } else if (typeof result === 'function') {
-                  return result(dispatch);
-                } else if (result !== undefined) {
-                  return dispatch(result);
-                }
-              };
-            }
-            if (flattern) {
-              Object.assign(iAction, mAction);
-            } else {
-              iAction[binding] = mAction;
-            }
-          } else {
-            for (let key in binding) {
-              if (typeof binding[key] === 'function') {
-                iAction[key] = binding[key].bind(null, dispatch);
-              } else if (typeof binding[key] === 'string') {
-                let keys = binding[key].split('.');
-                let mAction = {};
-                if (actions[keys[0]] && keys[1] === 'actions') {
-                  mAction[key] = (...args) => {
-                    const result = actions[keys[0]][keys[2]].apply(null, args);
-                    if (result && result.then) {
-                      return result;
-                    } else if (typeof result === 'function') {
-                      return result(dispatch);
-                    } else if (result !== undefined) {
-                      return dispatch(result);
-                    }
-                  };
-                }
-                if (flattern) {
-                  Object.assign(iAction, mAction);
-                } else {
-                  iAction[keys[0]] = mAction;
-                }
-              }
-            }
-          }
-        });
-        return iAction;
+        const iactions = getStateByModels({state: store.getState(), actions: actions, put: put, select: select}, bindings, flattern, {
+          actions: (actions) => getActionsByDispatch(actions, dispatch)
+        }, bindings._sign);
+        delete bindings._sign;
+        return iactions;
       }
     };
   }
@@ -921,7 +869,7 @@ export default class Beatle {
       return;
     }
     this._hasRendered = true;
-    let IRouter = Router;
+    let IRouter = this._setting.HistoryRouter;
     // basePath, renderCb
     if (typeof rootDom === 'string' || !rootDom || !rootDom.nodeType) {
       renderCb = basePath;
@@ -930,7 +878,7 @@ export default class Beatle {
     }
     if (typeof basePath === 'function') {
       // router, renderCb
-      if (basePath.prototype && basePath.prototype.isReactComponent) {
+      if (isReactComponent(basePath)) {
         IRouter = basePath;
         basePath = null;
       } else {
@@ -942,11 +890,14 @@ export default class Beatle {
 
     const routes = this._setting.routes;
     rootDom = rootDom || this._setting.rootDom;
-    this._setting.basePath = basePath || this._setting.basePath;
-    this._activeHistory = this._withBasename(this._setting.basePath);
     const IProvider = getProvider(this.injector, this.globalInjector);
     const appElement = (<IProvider store={this.getStore()}>
-      <IRouter history={this._activeHistory} routes={routes} />
+      <IRouter {...this._getRouterProps(routes, basePath)} ref={inst => {
+        if (inst) {
+          this._activeHistory = inst.history;
+          this.storeContainer = ReactDOM.findDOMNode(inst);
+        }
+      }} />
     </IProvider>);
     if (renderCb) {
       renderCb(appElement, rootDom);

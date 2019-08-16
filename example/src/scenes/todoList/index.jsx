@@ -16,7 +16,7 @@ export default class TodoList extends Component {
     super(props);
   }
 
-  componentWillMount() {
+  componentDidMount() {
     this
       .props
       .list

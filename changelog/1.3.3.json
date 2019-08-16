@@ -1,0 +1,7 @@
+{
+  "log": [
+    "新增特性：Beatle初始化支持freeze，表示状态值保持冻结",
+    "特性变更：支持model.actions（而不是model._actions）访问action函数，model._actions作为原始的action配置，去除model._defaultActions",
+    "api变更：app.select方法，通过多级访问时要全路径，比如model.state.a，而不是model.a"
+  ]
+}

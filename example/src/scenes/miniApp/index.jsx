@@ -140,7 +140,7 @@ class Root extends Component {
     super(props);
   }
 
-  componentWillMount() {
+  componentDidMount() {
     // this.props.user1.getUserAsync().then(res => {
     //   window.window.console.log(res);
     // });

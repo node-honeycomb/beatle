@@ -37,8 +37,7 @@ export default class AsyncComponent extends React.PureComponent {
     children: null
   }
 
-  componentDidMount() {
-    this.mounted = true;
+  subscribe() {
     this._subscription = this.props.observable.subscribe(children => {
       if (this.mounted) {
         this.setState({children: children});
@@ -46,16 +45,15 @@ export default class AsyncComponent extends React.PureComponent {
     });
   }
 
-  componentWillReceiveProps(nextProps) {
-    if (nextProps.observable !== this.props.observable) {
-      this
-        ._subscription
-        .unsubscribe();
-      this._subscription = nextProps.observable.subscribe(children => {
-        if (this.mounted) {
-          this.setState({children: children});
-        }
-      });
+  componentDidMount() {
+    this.mounted = true;
+    this.subscribe();
+  }
+
+  componentDidUpdate(prevProps) {
+    if (this.props.observable !== prevProps.observable) {
+      this._subscription.unsubscribe();
+      this.subscribe();
     }
   }
 

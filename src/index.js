@@ -2,7 +2,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import enhancleBeatle from './damo/index';
 import Beatle from './base/beatle';
-import {Link} from 'react-router';
+import {Link} from 'react-router-dom';
 import Ajax from './utils/ajax';
 import Poller from './utils/poller';
 import ReduxSeed from './seed';
@@ -10,6 +10,11 @@ import modelChecker from './base/model';
 import resourceChecker from './base/resource';
 import warning from 'fbjs/lib/warning';
 import messages from './core/messages';
+import StateObserver from './seed/stateObserver';
+
+import isReactComponent from './core/isReactComponent';
+import substitute from './core/substitute';
+import extractModules from './core/extractModules';
 /**
  * ### 提供Link标签，对react-router的Link标签做了Hoc
  *
@@ -150,6 +155,7 @@ Object.assign(Beatle, {
   createModel(Model, Resource) {
     if (this !== BeatlePro) {
       // for decorator model
+      // !TODO 可能有问题
       return docorators.createModel.call(Beatle, Model);
     } else {
       // #! 校验失败应该返回错误信息 see: https://github.com/facebook/prop-types/issues/142
@@ -199,7 +205,12 @@ Object.assign(Beatle, {
   Ajax: Ajax,
   Poller: Poller,
   ReduxSeed: ReduxSeed,
-  Link: BeatleLink
+  Link: BeatleLink,
+  StateObserver: StateObserver,
+
+  isReactComponent: isReactComponent,
+  substitute: substitute,
+  extractModules: extractModules
 });
 
 mixinApiToStatic(Beatle);
@@ -231,7 +242,7 @@ const docorators = {
     return app.model(Model, option.Resource);
   }),
   // decorator for createModel
-  createModel: Resource => Model => {
+  createModel: (Resource) => Model => {
     return BeatlePro.createModel(Model, Resource);
   },
   // docorator for route
@@ -256,7 +267,7 @@ const docorators = {
     if (typeof app === 'string') {
       app = Beatle.getApp(app);
     }
-    return app.view(option.selector, BaseComponent, option.providers, option.bindings, option.hookActions, option.props, option.getProps);
+    return app.view(option.selector, BaseComponent, option.providers, option.bindings, option.hookActions, option.props, option.getProps, option.flattern);
   })
 };
 
@@ -275,7 +286,7 @@ const BeatlePro = enhancleBeatle(Beatle);
   };
 });
 
-BeatlePro.prototype.version = '1.2.29';
+BeatlePro.prototype.version = '2.1.2';
 module.exports = BeatlePro;
 
 export default BeatlePro;

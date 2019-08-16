@@ -1,7 +1,7 @@
-import PropTypes from 'prop-types';
+import React, {createContext} from 'react';
 import warning from 'fbjs/lib/warning';
 import logMessages from '../core/messages';
-
+import isEqual from 'lodash/isEqual';
 export default function service(providers, Component, {injector, globalInjector, selector}) {
   // + 获取HOC包装的组件的实例 > see:
   // https://github.com/RubaXa/Sortable/issues/713#issuecomment-169668921
@@ -15,24 +15,23 @@ export default function service(providers, Component, {injector, globalInjector,
   }
 
   class NewComponent extends Component {
+    static displayName = Component.displayName || Component.name;
+    static childContext = createContext();
+
     constructor(props, context) {
       super(props, context);
       const services = this._services = {};
-      NewComponent.childContextTypes = NewComponent.childContextTypes || {};
       if (selector) {
         services.selector = selector;
-        NewComponent.childContextTypes.selector = PropTypes.object;
       }
 
       if (Array.isArray(providers)) {
         providers.forEach(Provider => {
           warning(Provider.displayName, logMessages.displayName, 'contructor', 'service', 'Beatle');
-          NewComponent.childContextTypes[Provider.displayName] = PropTypes.object;
           services[Provider.displayName] = injector.instantiate(Provider, Provider.displayName, getService.bind(this));
         });
       } else {
         for (let name in providers) {
-          NewComponent.childContextTypes[name] = PropTypes.object;
           services[name] = injector.instantiate(providers[name], name, getService.bind(this));
         }
       }
@@ -65,42 +64,58 @@ export default function service(providers, Component, {injector, globalInjector,
           }
         }
 
+        if (selector.hookActions) {
+          // hack react-redux 6.x
+          // see: https://github.com/reduxjs/react-redux/blob/fa5857281a37545c7c036fb2499159b865b1c57d/src/components/connectAdvanced.js
+          /* eslint-disable react/prop-types */
+          const empty = {};
+          this._state = this.props.location && this.props.location.state || empty;
+          const selectChildElement = this.selectChildElement;
+          this.selectChildElement = (derivedProps, forwardedRef) => {
+            const state = derivedProps.location && derivedProps.location.state || empty;
+            if (this._state !== state && !isEqual(this._state, state)) {
+              this._hookProps = null;
+              this._state = state;
+            }
+            if (!this._hookProps) {
+              this._hookProps = {};
+              selector.hookActions.forEach(action => {
+                let model;
+                if (typeof action === 'function') {
+                  const ret = action(derivedProps, this.context);
+                  if (ret !== undefined) {
+                    Object.assign(this._hookProps, ret);
+                  }
+                } else {
+                  if (typeof action === 'string') {
+                    model = selector.getModel(selector.bindings[0]);
+                    const name = action;
+                    action = {
+                      name: name
+                    };
+                  } else {
+                    model = typeof action.model === 'string' ? selector.getModel(action.model) : action.model || selector.getModel(selector.bindings[0]);
+                  }
+                  if (model && model[action.name]) {
+                    const params = action.getParams ? action.getParams(derivedProps, this.context) : action.params;
+                    if (params !== false) {
+                      model[action.name](params);
+                    }
+                  }
+                }
+              });
+            }
+            Object.assign(derivedProps, this._hookProps);
+            return selectChildElement.call(this, derivedProps, forwardedRef);
+          };
+        }
+
         // 完成后触发钩子函数
         try {
-          if (selector.hookActions) {
-            selector.hookActions.forEach(action => {
-              let model;
-              if (typeof action === 'string') {
-                model = selector.getModel(selector.bindings[0]);
-                const name = action;
-                action = {
-                  name: name
-                };
-              } else {
-                model = typeof action.model === 'string' ? selector.getModel(action.model) : action.model || selector.getModel(selector.bindings[0]);
-              }
-              if (model && model[action.name]) {
-                const params = action.getParams ? action.getParams(this.props, this.context) : action.params;
-                if (params !== false) {
-                  model[action.name](params);
-                }
-              }
-            });
-          }
           selector.initialize && selector.initialize(this.props);
         } catch (e) {
           window.console.error(e);
         }
-      }
-    }
-
-    getChildContext() {
-      // 子组件可以获取到providers注入的服务
-      if (super.getChildContext) {
-        const childContext = super.getChildContext();
-        return Object.assign(childContext, this._services);
-      } else {
-        return this._services;
       }
     }
 
@@ -116,10 +131,12 @@ export default function service(providers, Component, {injector, globalInjector,
         }
       }
     }
+
+    render() {
+      const children = super.render();
+      return (<NewComponent.childContext.Provider value={this._services}>{children}</NewComponent.childContext.Provider>);
+    }
   }
-  NewComponent.contextTypes =  Object.assign(NewComponent.contextTypes, {
-    router: PropTypes.object,
-    location: PropTypes.object
-  });
+
   return NewComponent;
 }
