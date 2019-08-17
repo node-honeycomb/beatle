@@ -24,6 +24,10 @@ export default class Root extends React.PureComponent {
     location: PropTypes.object,
   }
 
+  static defaultProps = {
+    getResolvePath: route => route.path
+  }
+
   state = {
     subMenus: null
   }
@@ -56,11 +60,11 @@ export default class Root extends React.PureComponent {
             },
             search: '',
             profileProps: {
-              nick: 'god',
+              nick: 'God',
             },
             noSider: true,
             menuProps: {
-              route: this.props.route,
+              route: this.getRoute(),
               routes: this.context.app.getRoutes()[0].routes,
               orderKeys: ['single', 'spa', 'complex', 'core'],
               subMenus: {
@@ -146,9 +150,49 @@ export default class Root extends React.PureComponent {
     );
   }
 
+  getTitle(title) {
+    if (React.isValidElement(title)) {
+      if (Array.isArray(title.props.children)) {
+        return this.getTitle(title.props.children[title.props.children.length - 1]);
+      } else {
+        return title.props.children;
+      }
+    } else {
+      return title;
+    }
+  }
+
+  getRouteTitle(route) {
+    let title = '示例';
+    if (route) {
+      title = this.getTitle(route.title) + ' - ' + title;
+    }
+    return title;
+  }
+
+  getRoute() {
+    const location = this.props.history.location;
+    if (this._route && this.props.getResolvePath(this._route) === location.pathname) {
+      return this._route;
+    }
+    if (!this.props.match.isExact) {
+      if (this.props.children) {
+        const cProps = this.props.children.props;
+        if (Array.isArray(cProps.children)) {
+          const child = cProps.children.find(item => this.props.getResolvePath(item.props) === location.pathname);
+          this._route = child.props.route;
+        } else {
+          this._route = cProps.children && cProps.children.props.route;
+        }
+      }
+    }
+    return this._route;
+  }
+
   render() {
     const viewContent = this.props.location.pathname > '/' ? this.props.children : this.getOverview();
-    const route = this.props.children && this.props.children.props.route;
+    const route = this.getRoute();
+    
     const layout = getLayout({
       layoutOption: this.layoutOption,
       layout: 'ConsoleLayout',
@@ -157,7 +201,7 @@ export default class Root extends React.PureComponent {
       demoLayout: DemoLayout
     });
     return (
-      <DocumentTitle title={(route ? route.component && route.component.routeOptions.title + ' - ' : '') + '示例'}>
+      <DocumentTitle title={this.getRouteTitle(route)}>
         <div className="j-scene-all">
           <div className="j-scene-root">
             {layout}

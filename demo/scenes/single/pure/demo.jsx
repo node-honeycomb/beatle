@@ -1,7 +1,6 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import Beatle from '../../../../src';
-
+import Beatle, {Ajax} from '../../../../src';
 // antd组件库
 // > see: https://ant.design/components
 import Table from 'antd/lib/table';
@@ -41,7 +40,7 @@ export default function renderDemo(dom) {
       super(props, context);
       this.state = {
         name: 'baqian',
-        repos: {}
+        repos: []
       };
     }
 
