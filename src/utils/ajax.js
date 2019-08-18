@@ -367,7 +367,7 @@ export default class Ajax {
     delete ajaxOptions.afterResponse;
     delete ajaxOptions.catchError;
 
-    beforeRequest = beforeRequest || this.set('beforeRequest');
+    beforeRequest = beforeRequest || this.set('beforeRequest') || noop;
     const processorResult = beforeRequest(ajaxOptions);
     if (processorResult === false) {
       return Promise.reject(false);
@@ -391,7 +391,7 @@ export default class Ajax {
       * > Fetch API 的支持情况，可以通过检测 Headers、Request、Response 或 fetch() 是否在 Window 或 Worker 域中
       */
       xhr = fetch(ajaxOptions.url, ajaxOptions).then((response) => {
-        beforeResponse = beforeResponse || this.set('beforeResponse');
+        beforeResponse = beforeResponse || this.set('beforeResponse') || noop;
         return beforeResponse(response, ajaxOptions, xhr);
       });
       xhr.catch(err => {
@@ -400,7 +400,7 @@ export default class Ajax {
     }
     const callback = ajaxOptions.callback;
     xhr = xhr.then((response) => {
-      afterResponse = afterResponse || this.set('afterResponse');
+      afterResponse = afterResponse || this.set('afterResponse') || noop;
 
       let result = afterResponse(response, ajaxOptions, xhr);
       if (result instanceof Error) {

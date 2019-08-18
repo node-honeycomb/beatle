@@ -7,7 +7,7 @@ import React from 'react';
 import path from 'path';
 import ReactDOM from 'react-dom';
 import propTypes from 'prop-types';
-import {BrowserRouter, HashRouter, MemoryRouter, Router, widthRouter} from 'react-router-dom';
+import {BrowserRouter, HashRouter, MemoryRouter, Router, withRouter} from 'react-router-dom';
 import renderRoutes from '../core/renderRoutes';
 import warning from 'fbjs/lib/warning';
 import messages from '../core/messages';
@@ -333,7 +333,7 @@ export default class Beatle {
         </IProvider>);
       }
     }
-    return widthRouter(newComponent);
+    return withRouter(newComponent);
   }
   parseRoute(routeConfig, strict) {
     // #! 如果设置路由是一个子App
@@ -589,17 +589,6 @@ export default class Beatle {
     }
   }
 
-  _getName(parentRoute, name, level) {
-    if (level > 1) {
-      for (; --level;) {
-        name = parentRoute.name + '/' + name;
-        parentRoute = parentRoute.parent;
-      }
-      return name;
-    } else {
-      return name;
-    }
-  }
   // ### 设置多个路由的具体实现
   routesFactory(routesMap = {}, option = {}) {
     routesMap = extractModules(routesMap, (module, key) => key);
@@ -698,7 +687,7 @@ export default class Beatle {
 
           if (parentRoute) {
             parentRoute.routes = parentRoute.routes || [];
-            childRoute = route(this._getName(parentRoute, parentRoute.path === navKey ? name : navKey + '/' + name, level), Comp, {
+            childRoute = route(parentRoute.path === navKey ? null : navKey + '/' + name, Comp, {
               name: name,
               navKey: navKey,
               strict: option.strict,

@@ -21,8 +21,7 @@ import reducerImmediate from './reducerImmediate';
  * bindings = [{name: {test: 1}}], flattern = false|true
  * => {name: {test: 1}}
  */
-function getStateByModel(redux, binding, flattern, wrappers, attrKey) {
-  const keys = binding.split('.');
+function getStateByModel(redux, keys, flattern, wrappers, attrKey) {
   const modelName = keys.shift();
   attrKey = attrKey || modelName;
   const model = {
@@ -72,9 +71,10 @@ export function getStateByModels(redux, bindings, flattern, wrappers, cacheMap) 
   try {
     bindings.forEach((binding) => {
       if (typeof binding === 'string') {
+        const keys = binding.split('.');
         if (!cacheMap[binding]) {
-          mState = getStateByModel(redux, binding, flattern, wrappers);
-          if (mState && !mState[binding]) {
+          mState = getStateByModel(redux, keys, flattern, wrappers);
+          if (mState && keys.length > 1 && !mState[binding]) {
             cacheMap[binding] = true;
           }
         }
@@ -85,7 +85,8 @@ export function getStateByModels(redux, bindings, flattern, wrappers, cacheMap) 
             if (Object(binding[modelName]) === binding[modelName]) {
               mState[modelName] = binding[modelName];
             } else if (typeof binding[modelName] === 'string') {
-              Object.assign(mState, getStateByModel(redux, binding[modelName], false, wrappers, modelName));
+              const keys = binding[modelName].split('.');
+              Object.assign(mState, getStateByModel(redux, keys, false, wrappers, modelName));
             }
             if (mState[modelName] === undefined) {
               delete mState[modelName];
